@@ -21,8 +21,9 @@ cloudinary.config({
 const upload = multer({ dest: 'uploads/' });
 
 // Load service account key (ensure file exists)
-const serviceAccount = require('./serviceAccountKey.json');
-
+//const serviceAccount = require('./serviceAccountKey.json');
+// استخدم متغيرات البيئة بدلاً من الملف المباشر
+const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://trimer-4081b-default-rtdb.firebaseio.com",
