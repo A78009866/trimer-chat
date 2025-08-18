@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="screen-orientation" content="portrait-primary">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trimer</title>
+    <style>
+        /* ... (احتفظ بجميع أنماط CSS كما هي) ... */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            flex-direction: column;
+        }
+
+        img {
+            width: 150px;
+            margin-bottom: 20px;
+            filter: brightness(0) invert(1);
+        }
+
+        .typing-effect::after {
+            content: "|";
+            display: inline-block;
+            animation: blink 0.7s infinite;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .typing-effect, h3 {
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 0 5px rgba(255,255,255,0.3);
+        }
+
+        h3 {
+            font-size: 24px;
+            margin-top: 15px;
+        }
+        
+        @media screen and (min-width: 320px) and (max-width: 767px) and (orientation: landscape) {
+            html {
+                transform: rotate(-90deg);
+                transform-origin: left top;
+                width: 100vh;
+                height: 100vw;
+                overflow-x: hidden;
+                position: absolute;
+                top: 100%;
+                left: 0;
+            }
+            body {
+                touch-action: pan-x pan-y;
+            }
+        }
+    </style>
+</head>
+<body>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/4/46/1000084215-removebg-preview.png" alt="شعار Trimer">
+    
+    <h4 class="typing-effect"></h4>
+
+    <script>
+        const text = "from salem ahmed";
+        let index = 0;
+        function typeEffect() {
+            if (index < text.length) {
+                document.querySelector(".typing-effect").textContent += text.charAt(index);
+                index++;
+                setTimeout(typeEffect, 100);
+            }
+        }
+        typeEffect();
+
+        setTimeout(function() {
+            // قم بإعادة توجيه المستخدم إلى المسار الجديد الذي يتحقق من حالة الجلسة
+            window.location.href = "/check-status";
+        }, 3000);
+    </script>
+    <script>
+        function lockOrientation() {
+            if (window.screen.orientation && window.screen.orientation.lock) {
+                window.screen.orientation.lock('portrait').catch(function(error) {
+                    console.log('Orientation lock failed: ', error);
+                });
+            } else if (window.screen.lockOrientation) {
+                window.screen.lockOrientation('portrait');
+            } else if (window.screen.mozLockOrientation) {
+                window.screen.mozLockOrientation('portrait');
+            } else if (window.screen.msLockOrientation) {
+                window.screen.msLockOrientation('portrait');
+            }
+        }
+
+        window.addEventListener('load', lockOrientation);
+        window.addEventListener('resize', lockOrientation);
+    </script>
+    <h3>Trimer</h3>
+</body>
+</html>

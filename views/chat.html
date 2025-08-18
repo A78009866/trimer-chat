@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>المحادثة</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+--bg: #000;
+--glass-bg: rgba(255, 255, 255, 0.05);
+--glass-border: rgba(255, 255, 255, 0.1);
+--accent: #7dd3fc;
+--muted: #cbd5e1;
+--reply-bg: rgba(255, 255, 255, 0.08);
+--reply-border: rgba(255, 255, 255, 0.15);
+--reply-block-bg: rgba(255, 255, 255, 0.08);
+--reply-block-border: rgba(255, 255, 255, 0.15);
+}
+html, body {
+height: 100%;
+margin: 0;
+font-family: 'Inter', system-ui;
+background-color: var(--bg);
+color: var(--muted);
+-webkit-font-smoothing: antialiased;
+direction: rtl;
+}
+.wrap {
+height: 100vh;
+display: flex;
+flex-direction: column;
+max-width: 980px;
+margin: 0 auto;
+padding: 0;
+}
+.top {
+display: flex;
+align-items: center;
+gap: 6px;
+justify-content: space-between;
+padding: 6px 10px;
+position: fixed; /* Changed from sticky to fixed */
+top: 0;
+left: 0; /* Added for fixed positioning */
+right: 0; /* Added for fixed positioning */
+background: var(--bg);
+z-index: 200;
+border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.user-row {
+display: flex;
+align-items: center;
+gap: 6px;
+flex: 1;
+min-width: 0;
+}
+.avatar {
+width: 36px;
+height: 36px;
+border-radius: 8px;
+overflow: hidden;
+border: 1px solid rgba(255, 255, 255, 0.06);
+background: linear-gradient(135deg, #0b3146, #063048);
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+}
+.avatar img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+display: block;
+}
+.meta {
+display: flex;
+flex-direction: column;
+gap: 2px;
+min-width: 0;
+}
+.meta .name {
+font-weight: 700;
+color: #e6f0fb;
+font-size: 13px;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.meta .sub {
+font-size: 10px;
+color: #8aa5bd;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.glass {
+flex: 1;
+display: flex;
+flex-direction: column;
+margin-bottom: 0;
+background: transparent;
+border: none;
+backdrop-filter: none;
+-webkit-backdrop-filter: none;
+box-shadow: none;
+padding: 0;
+}
+.messages {
+flex: 1;
+overflow-y: auto;
+display: flex;
+flex-direction: column;
+gap: 8px;
+padding: 12px;
+padding-bottom: 80px;
+scroll-behavior: smooth;
+margin-top: 50px; /* Added margin to prevent content from hiding under the fixed header */
+}
+.msg {
+max-width: 80%;
+padding: 8px 10px;
+border-radius: 10px;
+font-size: 13px;
+line-height: 1.3;
+word-break: break-word;
+cursor: pointer;
+}
+.incoming {
+align-self: flex-start;
+background: rgba(255, 255, 255, 0.05);
+border: 1px solid rgba(255, 255, 255, 0.08);
+color: var(--muted);
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+}
+.outgoing {
+align-self: flex-end;
+background: rgba(10, 100, 150, 0.3);
+color: #e6f7ff;
+border: 1px solid rgba(255, 255, 255, 0.03);
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+}
+.msg-image, .msg-video {
+max-width: 100%;
+height: auto;
+display: block;
+border-radius: 6px;
+}
+.msg-audio-player {
+display: flex;
+align-items: center;
+gap: 8px;
+width: 220px;
+background: rgba(255, 255, 255, 0.1);
+border-radius: 10px;
+padding: 6px;
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+}
+.incoming .msg-audio-player {
+background: rgba(255, 255, 255, 0.05);
+border: 1px solid rgba(255, 255, 255, 0.08);
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+}
+.audio-play-btn {
+background: #e6f7ff;
+color: #0369a1;
+border: none;
+border-radius: 50%;
+width: 32px;
+height: 32px;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+flex-shrink: 0;
+}
+.incoming .audio-play-btn {
+background: var(--muted);
+color: var(--bg);
+}
+.audio-waveform-container {
+flex: 1;
+min-height: 40px;
+}
+.audio-time {
+font-size: 11px;
+color: #e6f7ffcc;
+}
+.incoming .audio-time {
+color: #cbd5e1cc;
+}
+.meta-time {
+font-size: 10px;
+color: #9fb3c8;
+margin-top: 4px;
+text-align: left;
+}
+.composer {
+display: flex;
+flex-direction: column;
+gap: 8px;
+padding: 6px 10px;
+border-top: 1px solid rgba(255, 255, 255, 0.1);
+position: fixed;
+bottom: 0;
+left: 0;
+right: 0;
+background-color: var(--bg);
+z-index: 100;
+box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5);
+}
+.composer-input-row {
+display: flex;
+gap: 6px;
+align-items: flex-end;
+}
+.composer textarea {
+flex: 1;
+min-height: 32px;
+max-height: 100px;
+resize: none;
+padding: 6px 12px;
+border-radius: 16px;
+border: 1px solid rgba(255, 255, 255, 0.1);
+background: transparent;
+color: var(--muted);
+transition: all 0.2s ease;
+direction: rtl;
+font-size: 12px;
+}
+.composer textarea:focus {
+outline: none;
+border-color: var(--accent);
+}
+.composer-btn {
+width: 32px;
+height: 32px;
+background: linear-gradient(180deg, #06b6d4, #0891b2);
+color: #012;
+border: none;
+border-radius: 50%;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.2s ease;
+font-size: 16px;
+line-height: 1;
+flex-shrink: 0;
+}
+.composer-btn:disabled {
+background: #444;
+cursor: not-allowed;
+}
+.composer-btn:hover {
+transform: scale(1.05);
+}
+.file-input-btn, .voice-btn {
+background: rgba(255, 255, 255, 0.05);
+border: 1px solid rgba(255, 255, 255, 0.1);
+color: var(--muted);
+padding: 6px;
+border-radius: 50%;
+cursor: pointer;
+font-size: 16px;
+line-height: 1;
+width: 32px;
+height: 32px;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.2s ease;
+flex-shrink: 0;
+}
+.file-input-btn:hover, .voice-btn:hover {
+background: rgba(255, 255, 255, 0.1);
+}
+#file-preview {
+display: flex;
+align-items: center;
+gap: 6px;
+padding: 6px;
+background: rgba(255, 255, 255, 0.05);
+border-radius: 6px;
+border: 1px solid rgba(255, 255, 255, 0.1);
+font-size: 12px;
+}
+#file-preview img, #file-preview video, #file-preview audio {
+max-height: 40px;
+border-radius: 4px;
+}
+.small {
+font-size: 11px;
+color: #8aa5bd;
+}
+.recording-indicator {
+display: none;
+align-items: center;
+gap: 6px;
+padding: 6px 10px;
+background: rgba(255, 0, 0, 0.2);
+border-radius: 18px;
+font-size: 12px;
+color: #ff6b6b;
+}
+.recording-dot {
+width: 8px;
+height: 8px;
+background-color: #ff6b6b;
+border-radius: 50%;
+animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+0% { opacity: 1; }
+50% { opacity: 0.3; }
+100% { opacity: 1; }
+}
+.spin {
+animation: spin 1s linear infinite;
+}
+@keyframes spin {
+100% { transform: rotate(360deg); }
+}
+.btn {
+padding: 6px;
+font-size: 12px;
+}
+#reply-container {
+display: none;
+align-items: center;
+gap: 8px;
+padding: 6px 12px;
+border-radius: 12px;
+background: var(--reply-bg);
+border: 1px solid var(--reply-border);
+margin-top: -4px;
+}
+#reply-content {
+flex: 1;
+display: flex;
+flex-direction: column;
+min-width: 0;
+font-size: 12px;
+line-height: 1.3;
+}
+#reply-sender {
+font-weight: 600;
+color: var(--accent);
+font-size: 11px;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+#reply-text {
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+color: var(--muted);
+}
+#cancel-reply-btn {
+background: none;
+border: none;
+color: var(--muted);
+cursor: pointer;
+font-size: 14px;
+padding: 4px;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+/* New CSS for reply block inside messages */
+.reply-block {
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  background: var(--reply-block-bg);
+  border-right: 3px solid var(--accent);
+  display: flex;
+  flex-direction: column;
+}
+
+.incoming .reply-block {
+  background: rgba(255, 255, 255, 0.05);
+  border-right: 3px solid #cbd5e1;
+}
+
+.reply-block-sender {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.incoming .reply-block-sender {
+  color: #cbd5e1;
+}
+
+.reply-block-text {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>
+<script src="https://unpkg.com/wavesurfer.js"></script>
+</head>
+<body>
+<div class="wrap">
+<div class="top">
+<div class="user-row">
+<a class="btn" href="/chat_list" style="text-decoration:none;color:var(--muted);">◀</a>
+<a id="other-profile-link" href="#" class="avatar"><img id="other-avatar" src="https://res.cloudinary.com/duixjs8az/image/upload/v1/profile_pics/default_profile.png" alt="avatar"></a>
+<div class="meta">
+<div id="other-name" class="name">جارٍ التحميل...</div>
+<div id="other-username" class="sub small"></div>
+</div>
+</div>
+<div>
+<a href="/logout" style="text-decoration:none;color:var(--muted);font-size:12px;">تسجيل خروج</a>
+</div>
+</div>
+<div class="glass">
+<div id="messages" class="messages">
+<div class="small" style="text-align:center">جاري تحميل الرسائل...</div>
+</div>
+</div>
+<form id="sendForm" class="composer" onsubmit="return false;">
+<div id="reply-container">
+<div id="reply-content">
+<span id="reply-sender"></span>
+<span id="reply-text"></span>
+</div>
+<button id="cancel-reply-btn" type="button" title="إلغاء الرد">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+<path d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm3.707 7.293a1 1 0 00-1.414-1.414L12 10.586l-2.293-2.293a1 1 0 00-1.414 1.414L10.586 12l-2.293 2.293a1 1 0 001.414 1.414L12 13.414l2.293 2.293a1 1 0 001.414-1.414L13.414 12l2.293-2.293z"/>
+</svg>
+</button>
+</div>
+<div id="file-preview" style="display:none;"></div>
+<div id="recording-indicator" class="recording-indicator">
+<div class="recording-dot"></div>
+<span>جاري التسجيل...</span>
+<span id="recording-time">0:00</span>
+</div>
+<div class="composer-input-row">
+<label for="media-upload" class="file-input-btn" title="إرفاق ملف">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7v-2h4V7h2v4h4v2h-4v4h-2z"/>
+</svg>
+</label>
+<input type="file" id="media-upload" style="display:none;" accept="image/*,video/*,audio/*">
+<textarea id="msgInput" placeholder="اكتب رسالة..." aria-label="اكتب رسالة"></textarea>
+<button id="voiceBtn" class="voice-btn" type="button" title="تسجيل صوت">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/>
+</svg>
+</button>
+<button id="sendBtn" class="composer-btn" type="submit" title="إرسال">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+</svg>
+</button>
+</div>
+</form>
+</div>
+<script>
+function getQuery(name) {
+const params = new URLSearchParams(window.location.search);
+return params.get(name);
+}
+const otherId = getQuery('other_id');
+if (!otherId) {
+alert('معرف المستخدم غير موجود في الرابط.');
+window.location.href = '/chat_list';
+}
+const messagesEl = document.getElementById('messages');
+const otherAvatar = document.getElementById('other-avatar');
+const otherName = document.getElementById('other-name');
+const otherUsername = document.getElementById('other-username');
+const otherProfileLink = document.getElementById('other-profile-link');
+const msgInput = document.getElementById('msgInput');
+const sendForm = document.getElementById('sendForm');
+const sendBtn = document.getElementById('sendBtn');
+const mediaUploadInput = document.getElementById('media-upload');
+const filePreview = document.getElementById('file-preview');
+const voiceBtn = document.getElementById('voiceBtn');
+const recordingIndicator = document.getElementById('recording-indicator');
+const recordingTime = document.getElementById('recording-time');
+const replyContainer = document.getElementById('reply-container');
+const replySender = document.getElementById('reply-sender');
+const replyText = document.getElementById('reply-text');
+const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+let uploadedFile = null;
+let mediaRecorder;
+let audioChunks = [];
+let recordingStartTime;
+let recordingInterval;
+let myId;
+let activeAudioPlayer = null;
+let replyToMessage = null;
+otherProfileLink.href = `/profile?user_id=${otherId}`;
+function scrollToBottom() {
+messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+async function fetchOtherProfile() {
+try {
+const res = await fetch('/api/users', { credentials: 'same-origin' });
+if (res.status === 401) return window.location.href = '/login';
+const list = await res.json();
+const other = Array.isArray(list) ? list.find(u => u.uid === otherId || u.id === otherId) : null;
+if (other) {
+otherAvatar.src = other.profile_picture_url || 'https://res.cloudinary.com/duixjs8az/image/upload/v1/profile_pics/default_profile.png';
+otherName.textContent = other.full_name || other.username || 'مستخدم';
+otherUsername.textContent = other.username ? ('@' + other.username) : '';
+} else {
+otherName.textContent = 'مستخدم';
+otherUsername.textContent = otherId;
+}
+} catch (err) {
+console.error('fetchOtherProfile', err);
+}
+}
+let lastMessages = [];
+async function fetchMessages() {
+try {
+const res = await fetch('/api/messages/' + encodeURIComponent(otherId), { credentials: 'same-origin' });
+if (res.status === 401) return window.location.href = '/login';
+const data = await res.json();
+if (!Array.isArray(data)) return;
+const jsonKey = JSON.stringify(data);
+if (jsonKey === JSON.stringify(lastMessages)) return;
+lastMessages = data;
+const wasScrolledToBottom = messagesEl.scrollHeight - messagesEl.clientHeight <= messagesEl.scrollTop + 1;
+messagesEl.innerHTML = '';
+if (data.length === 0) {
+messagesEl.innerHTML = '<div class="small" style="text-align:center">لا توجد رسائل بعد</div>';
+return;
+}
+data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+if (!myId) {
+const profileRes = await fetch('/api/profile');
+if (profileRes.ok) {
+const user = await profileRes.json();
+myId = user.id;
+}
+}
+data.forEach(msg => {
+const isIncoming = (msg.sender_id !== myId);
+const el = document.createElement('div');
+el.className = 'msg ' + (isIncoming ? 'incoming' : 'outgoing');
+let contentHtml = '';
+
+// Check and display reply block
+if (msg.replied_to_id) {
+    const repliedSender = msg.replied_to_sender || 'مستخدم';
+    const repliedContent = msg.replied_to_content || 'رسالة محذوفة';
+    contentHtml += `
+      <div class="reply-block">
+        <span class="reply-block-sender">${escapeHtml(repliedSender)}</span>
+        <span class="reply-block-text">${escapeHtml(repliedContent)}</span>
+      </div>
+    `;
+}
+
+// Display media and text content
+const isWebmAudio = msg.media_url && msg.media_url.endsWith('.webm');
+if (msg.media_url) {
+if (msg.media_type.startsWith('image')) {
+contentHtml += `<img src="${escapeAttr(msg.media_url)}" class="msg-image" alt="image">`;
+} else if (msg.media_type.startsWith('audio') || isWebmAudio) {
+contentHtml += createAudioPlayer(msg.media_url, isIncoming);
+} else if (msg.media_type.startsWith('video')) {
+contentHtml += `<video src="${escapeAttr(msg.media_url)}" controls class="msg-video"></video>`;
+}
+}
+if (msg.content) {
+contentHtml += `<div>${escapeHtml(msg.content)}</div>`;
+}
+
+el.innerHTML = `<div>${contentHtml}</div><div class="meta-time">${formatTime(msg.created_at)}</div>`;
+el.setAttribute('data-msg-id', msg.id);
+el.setAttribute('data-sender-id', msg.sender_id);
+el.setAttribute('data-msg-content', msg.content || 'ملف مرفق');
+el.setAttribute('data-sender-name', isIncoming ? otherName.textContent : 'أنت');
+messagesEl.appendChild(el);
+});
+attachAudioPlayerListeners();
+attachReplyListeners();
+if (wasScrolledToBottom) {
+scrollToBottom();
+}
+} catch (err) {
+console.error('fetchMessages', err);
+}
+}
+function attachReplyListeners() {
+document.querySelectorAll('.msg').forEach(msgEl => {
+msgEl.addEventListener('click', () => {
+const msgId = msgEl.getAttribute('data-msg-id');
+const senderName = msgEl.getAttribute('data-sender-name');
+const msgContent = msgEl.getAttribute('data-msg-content');
+if (msgContent.trim() !== 'ملف مرفق') {
+replyToMessage = {
+    id: msgId,
+    senderName: senderName,
+    content: msgContent
+};
+replySender.textContent = `الرد على ${senderName}`;
+replyText.textContent = msgContent;
+replyContainer.style.display = 'flex';
+msgInput.focus();
+}
+});
+});
+cancelReplyBtn.addEventListener('click', () => {
+replyToMessage = null;
+replyContainer.style.display = 'none';
+});
+}
+function createAudioPlayer(src, isIncoming) {
+const uniqueId = 'waveform_' + Math.random().toString(36).substr(2, 9);
+return `
+<div class="msg-audio-player">
+<button class="audio-play-btn">
+<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
+</button>
+<div class="audio-waveform-container" data-src="${src}" data-is-incoming="${isIncoming}" id="${uniqueId}"></div>
+<span class="audio-time">0:00</span>
+</div>
+`;
+}
+function attachAudioPlayerListeners() {
+document.querySelectorAll('.msg-audio-player').forEach(player => {
+const waveformContainer = player.querySelector('.audio-waveform-container');
+const playBtn = player.querySelector('.audio-play-btn');
+const timeDisplay = player.querySelector('.audio-time');
+const src = waveformContainer.dataset.src;
+const isIncoming = waveformContainer.dataset.isIncoming === 'true';
+const wavesurfer = WaveSurfer.create({
+container: waveformContainer,
+waveColor: isIncoming ? '#cbd5e1' : '#e6f7ff',
+progressColor: isIncoming ? '#8aa5bd' : '#7dd3fc',
+cursorColor: 'transparent',
+barWidth: 2,
+height: 40,
+barGap: 1,
+barRadius: 2,
+minPxPerSec: 10,
+});
+wavesurfer.load(src);
+playBtn.onclick = () => {
+if (activeAudioPlayer && activeAudioPlayer !== wavesurfer) {
+activeAudioPlayer.pause();
+}
+activeAudioPlayer = wavesurfer;
+wavesurfer.playPause();
+};
+wavesurfer.on('play', () => {
+playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+});
+wavesurfer.on('pause', () => {
+playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>';
+});
+wavesurfer.on('ready', () => {
+timeDisplay.textContent = formatAudioTime(wavesurfer.getDuration());
+});
+wavesurfer.on('timeupdate', (currentTime) => {
+timeDisplay.textContent = formatAudioTime(currentTime);
+});
+});
+}
+function formatAudioTime(seconds) {
+if (isNaN(seconds)) return '0:00';
+const min = Math.floor(seconds / 60);
+const sec = Math.floor(seconds % 60);
+return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+}
+function formatTime(dateString) {
+const date = new Date(dateString);
+const now = new Date();
+if (date.toDateString() === now.toDateString()) {
+return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+} else {
+return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
+date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+}
+async function sendMessage() {
+let content = msgInput.value.trim();
+if (!content && !uploadedFile && audioChunks.length === 0) return;
+sendBtn.disabled = true;
+sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" class="spin"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 6v6l4 2-1 2-5-3.01V6z"/></svg>';
+const formData = new FormData();
+formData.append('other_id', otherId);
+formData.append('content', content);
+
+if (replyToMessage) {
+    formData.append('replied_to_id', replyToMessage.id);
+    formData.append('replied_to_content', replyToMessage.content);
+    formData.append('replied_to_sender', replyToMessage.senderName);
+}
+
+if (uploadedFile) {
+formData.append('media', uploadedFile);
+} else if (audioChunks.length > 0) {
+const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+formData.append('media', audioBlob, 'recording.wav');
+}
+try {
+const res = await fetch('/api/messages/send', {
+method: 'POST',
+credentials: 'same-origin',
+body: formData
+});
+if (res.status === 401) return window.location.href = '/login';
+const result = await res.json();
+if (result && result.ok) {
+msgInput.value = '';
+uploadedFile = null;
+audioChunks = [];
+filePreview.style.display = 'none';
+filePreview.innerHTML = '';
+replyToMessage = null;
+replyContainer.style.display = 'none';
+await fetchMessages();
+scrollToBottom();
+} else {
+console.error('send failed', result);
+alert('فشل في إرسال الرسالة');
+}
+} catch (err) {
+console.error('sendMessage error', err);
+alert('حدث خطأ أثناء الإرسال');
+} finally {
+sendBtn.disabled = false;
+sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+}
+}
+async function markRead() {
+try {
+await fetch('/api/mark_read', {
+method: 'POST',
+credentials: 'same-origin',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ other_id: otherId })
+});
+} catch (err) {
+console.error('markRead', err);
+}
+}
+function escapeHtml(s) {
+if (!s && s !== 0) return '';
+return String(s).replace(/[&<>"']/g, function(m) {
+return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+});
+}
+function escapeAttr(s) {
+if (!s && s !== 0) return '';
+return String(s).replace(/[&<>"']/g, function(m) {
+return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+});
+}
+async function startRecording() {
+try {
+const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+mediaRecorder = new MediaRecorder(stream);
+audioChunks = [];
+mediaRecorder.ondataavailable = event => {
+audioChunks.push(event.data);
+};
+mediaRecorder.onstop = async () => {
+stream.getTracks().forEach(track => track.stop());
+recordingIndicator.style.display = 'none';
+clearInterval(recordingInterval);
+if (audioChunks.length > 0) {
+sendMessage();
+}
+};
+mediaRecorder.start();
+recordingStartTime = Date.now();
+recordingInterval = setInterval(updateRecordingTime, 1000);
+recordingIndicator.style.display = 'flex';
+} catch (err) {
+console.error('Error starting recording:', err);
+alert('لا يمكن الوصول إلى الميكروفون. يرجى التحقق من الأذونات.');
+}
+}
+function stopRecording() {
+if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+mediaRecorder.stop();
+}
+}
+function updateRecordingTime() {
+const seconds = Math.floor((Date.now() - recordingStartTime) / 1000);
+const minutes = Math.floor(seconds / 60);
+const remainingSeconds = seconds % 60;
+recordingTime.textContent = `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+}
+mediaUploadInput.addEventListener('change', (event) => {
+const file = event.target.files[0];
+if (file) {
+uploadedFile = file;
+audioChunks = [];
+const reader = new FileReader();
+reader.onload = (e) => {
+filePreview.innerHTML = '';
+let previewElement;
+const isWebmAudio = file.type.startsWith('audio/') || file.type === 'video/webm' || file.name.endsWith('.webm');
+if (file.type.startsWith('image/')) {
+previewElement = document.createElement('img');
+previewElement.src = e.target.result;
+previewElement.alt = "صورة معاينة";
+} else if (isWebmAudio) {
+previewElement = document.createElement('audio');
+previewElement.src = e.target.result;
+previewElement.controls = true;
+} else if (file.type.startsWith('video/')) {
+previewElement = document.createElement('video');
+previewElement.src = e.target.result;
+previewElement.controls = true;
+} else {
+previewElement = document.createElement('span');
+previewElement.textContent = file.name;
+}
+filePreview.appendChild(previewElement);
+filePreview.style.display = 'flex';
+};
+reader.readAsDataURL(file);
+} else {
+uploadedFile = null;
+filePreview.style.display = 'none';
+filePreview.innerHTML = '';
+}
+});
+sendForm.addEventListener('submit', e => {
+e.preventDefault();
+sendMessage();
+});
+msgInput.addEventListener('keydown', e => {
+if (e.key === 'Enter' && !e.shiftKey) {
+e.preventDefault();
+sendMessage();
+}
+});
+voiceBtn.addEventListener('mousedown', startRecording);
+voiceBtn.addEventListener('mouseup', stopRecording);
+voiceBtn.addEventListener('mouseleave', stopRecording);
+voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
+voiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
+(async function init() {
+await fetchOtherProfile();
+await markRead();
+await fetchMessages();
+scrollToBottom();
+setInterval(async () => {
+await fetchMessages();
+await markRead();
+}, 3000);
+})();
+</script>
+</body>
+</html>
