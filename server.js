@@ -5,24 +5,41 @@ const session = require('express-session');
 const admin = require('firebase-admin');
 const { getAuth } = require('firebase-admin/auth');
 const { getDatabase } = require('firebase-admin/database');
+
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+// لم نعد بحاجة إلى مكتبة 'fs' لأننا لا نتعامل مع الملفات المحلية
 
-// Cloudinary Configuration
+// Cloudinary Configuration using Environment Variables
 cloudinary.config({
-  cloud_name: "duixjs8az",
-  api_key: "143978951428697",
-  api_secret: "9dX6eIvntdtGQIU7oXGMSRG9I2o",
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
   secure: true
 });
 
-// Multer setup for file uploads
-const upload = multer({ dest: 'uploads/' });
+// Multer setup for file uploads using Cloudinary Storage
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: (req, file) => {
+        // تحديد المجلد بناءً على المسار
+        if (req.originalUrl.includes('/register')) {
+            return 'profile_pics';
+        } else if (req.originalUrl.includes('/messages/send')) {
+            return 'chat_media';
+        }
+        return 'general';
+    },
+    format: async (req, file) => 'jpg', // يمكنك تغيير التنسيق حسب حاجتك
+    public_id: (req, file) => Date.now() + '-' + file.originalname,
+  },
+});
 
-// Load service account key (ensure file exists)
-//const serviceAccount = require('./serviceAccountKey.json');
-// استخدم متغيرات البيئة بدلاً من الملف المباشر
+const upload = multer({ storage: storage });
+
+// Load service account key from environment variable
 const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -37,7 +54,6 @@ const port = 3000;
 
 // ---------------- Middleware ----------------
 app.set('trust proxy', 1);
-//app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -125,12 +141,8 @@ app.post('/register', upload.single('profile_picture'), async (req, res) => {
     const email = `${username}@trimer.io`;
 
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'profile_pics',
-        public_id: username
-      });
-      profile_picture_url = result.secure_url;
-      fs.unlinkSync(req.file.path);
+      // no need to manually upload or delete from local disk
+      profile_picture_url = req.file.path; // CloudinaryStorage saves the public URL to req.file.path
     }
 
     const userRecord = await firebaseAuth.createUser({
@@ -320,14 +332,9 @@ app.post('/api/messages/send', upload.single('media'), requireAuth, async (req, 
 
   try {
     if (req.file) {
-      const uploadOptions = {
-        folder: 'chat_media',
-        resource_type: 'auto'
-      };
-      const result = await cloudinary.uploader.upload(req.file.path, uploadOptions);
-      media_url = result.secure_url;
-      media_type = result.resource_type;
-      fs.unlinkSync(req.file.path);
+      // The file has been uploaded to Cloudinary by multer
+      media_url = req.file.path;
+      media_type = req.file.resource_type;
     }
 
     if (!other_id || (!content && !media_url)) {
