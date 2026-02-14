@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>المحادثة</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --bg: #000;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --accent: #7dd3fc;
+  --muted: #cbd5e1;
+  --reply-bg: rgba(255, 255, 255, 0.08);
+  --reply-border: rgba(255, 255, 255, 0.15);
+  
+  /* ألوان الرسائل */
+  --msg-incoming-bg: rgba(255, 255, 255, 0.08);
+  --msg-outgoing-bg: rgba(14, 165, 233, 0.25);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg);
+  color: var(--muted);
+  overflow: hidden; 
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.wrap {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 980px;
+  margin: 0 auto;
+  position: relative;
+  background: var(--bg);
+}
+
+/* --- Header --- */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg);
+  z-index: 50;
+  border-bottom: 1px solid var(--glass-border);
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+}
+
+.avatar-with-dot {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
+
+.online-dot {
+  position: absolute;
+  bottom: -2px;
+  left: -2px;
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border: 2px solid #000;
+  border-radius: 50%;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.meta .name {
+  font-weight: 700;
+  color: #fff;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta .sub {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.back-btn {
+  color: #fff;
+  font-size: 18px;
+  padding: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Messages Area --- */
+.glass {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  padding-bottom: 90px; /* Space for composer */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0; 
+  transition: opacity 0.2s ease;
+}
+
+/* --- Message Bubbles --- */
+.msg-container {
+  display: flex;
+  width: 100%;
+  position: relative;
+  margin-bottom: 12px; 
+  touch-action: pan-y; 
+}
+
+.msg-wrapper {
+  position: relative;
+  max-width: 80%;
+  z-index: 2;
+  transition: transform 0.1s linear; 
+  will-change: transform;
+}
+
+.msg {
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: visible !important; 
+}
+
+/* Incoming */
+.incoming-container { justify-content: flex-start; }
+.incoming-container .msg {
+  background: var(--msg-incoming-bg);
+  color: #f1f5f9;
+  border-bottom-right-radius: 4px;
+}
+
+/* Outgoing */
+.outgoing-container { justify-content: flex-end; }
+.outgoing-container .msg {
+  background: var(--msg-outgoing-bg);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-bottom-left-radius: 4px;
+}
+
+/* Reply Indicator Icon */
+.reply-indicator-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%) scale(0);
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  transition: transform 0.2s;
+  z-index: 1;
+}
+
+/* Media Styles */
+.msg-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-top: 4px;
+  display: block;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.msg-image:active { opacity: 0.8; }
+
+.msg-video {
+  max-width: 100%;
+  width: 260px;
+  max-height: 300px;
+  height: auto;
+  border-radius: 12px;
+  margin-top: 4px;
+  display: block;
+  background: #000;
+  object-fit: contain;
+}
+
+/* Audio Player - Fixed Styles */
+.msg-audio-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 240px; /* Slightly wider */
+  padding: 6px 0;
+}
+
+.audio-play-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.audio-play-btn:active { background: rgba(255,255,255,0.3); }
+
+.audio-waveform-container { 
+    flex: 1; 
+    height: 34px; 
+    min-width: 120px;
+    position: relative;
+    display: block;
+    /* Force visibility */
+    opacity: 1 !important;
+}
+.audio-time { font-size: 11px; color: #fff; font-weight: 600; min-width: 32px; text-align: center; }
+
+/* Reply Context */
+.reply-context {
+  background: rgba(0, 0, 0, 0.2);
+  border-right: 3px solid rgba(255,255,255,0.5);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+}
+.reply-context-sender { font-weight: 700; color: #fff; margin-bottom: 2px; }
+.reply-context-text { color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Metadata */
+.msg-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+}
+
+/* Reaction Badge on Message */
+.msg-reaction-badge {
+  position: absolute;
+  bottom: -12px;
+  z-index: 10;
+  background: #1e293b;
+  border: 2px solid #000;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  line-height: 1;
+}
+.outgoing-container .msg-reaction-badge { left: -8px; }
+.incoming-container .msg-reaction-badge { right: -8px; }
+
+/* Reaction Menu (Floating & Fixed) */
+.reaction-menu {
+  position: fixed;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50px;
+  padding: 8px 14px;
+  display: none;
+  gap: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  z-index: 9999;
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.reaction-item {
+  font-size: 24px;
+  cursor: pointer;
+  transition: transform 0.1s;
+  user-select: none;
+  line-height: 1;
+}
+.reaction-item:hover { transform: scale(1.3); }
+.reaction-item:active { transform: scale(0.9); }
+
+/* --- Full Screen Image Overlay --- */
+.img-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.img-overlay.active { display: flex; opacity: 1; }
+.img-overlay img {
+  max-width: 95%;
+  max-height: 90%;
+  border-radius: 8px;
+  box-shadow: 0 5px 30px rgba(0,0,0,0.5);
+  object-fit: contain;
+  transition: transform 0.2s;
+}
+.img-close-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px; /* RTL layout */
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.2);
+  z-index: 10001;
+}
+.img-close-btn:active { background: rgba(255,255,255,0.3); }
+
+/* --- Composer --- */
+.composer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--bg);
+  border-top: 1px solid var(--glass-border);
+  padding: 8px 10px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Reply Preview */
+#reply-container {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--reply-bg);
+  border: 1px solid var(--reply-border);
+  padding: 8px 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  animation: slideUp 0.2s ease-out;
+}
+@keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.reply-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; }
+.reply-to-label { font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 2px; }
+.reply-preview-text { font-size: 11px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* File/Audio Preview in Composer */
+#file-preview-area {
+  display: none;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  align-items: center;
+  gap: 10px;
+}
+.file-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: #000; }
+.preview-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.preview-filename { font-size: 12px; color: #fff; font-weight: 600; margin-bottom: 4px; }
+.preview-sub { font-size: 10px; color: #94a3b8; }
+
+.composer-audio-wave { width: 100%; height: 30px; border-radius: 4px; }
+
+/* Close Button */
+.close-btn {
+  background: rgba(255,255,255,0.1);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  border: none;
+}
+.close-btn:hover { background: #ef4444; }
+
+/* Input Row */
+.input-row { display: flex; align-items: flex-end; gap: 8px; }
+
+.action-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.action-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
+
+textarea {
+  flex: 1;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 8px 14px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  resize: none;
+  min-height: 38px;
+  max-height: 120px;
+  outline: none;
+  line-height: 1.4;
+}
+textarea:focus { border-color: var(--accent); }
+
+/* Sending Spinner */
+.sending-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.send-btn {
+  background: #0ea5e9;
+  border: none;
+  color: #fff;
+}
+.send-btn:disabled { background: #334155; opacity: 0.7; }
+
+/* Recording UI */
+#recording-ui {
+  display: none;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  background: rgba(185, 28, 28, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 20px;
+  padding: 0 15px;
+  height: 38px;
+}
+.rec-dot { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; animation: pulse 1s infinite; }
+.rec-time { font-size: 13px; color: #fff; flex: 1; font-weight: 600; font-feature-settings: "tnum"; }
+.cancel-rec { color: #fca5a5; cursor: pointer; font-size: 12px; font-weight: 600; }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+</style>
+<script src="https://unpkg.com/wavesurfer.js"></script>
+</head>
+<body>
+
+<div id="image-overlay" class="img-overlay" onclick="closeImageModal(event)">
+  <div class="img-close-btn" onclick="closeImageModal(event)">
+    <i class="fas fa-times"></i>
+  </div>
+  <img id="overlay-img" src="" alt="Full Preview" />
+</div>
+
+<div class="wrap">
+  <div class="top">
+    <a href="/users_list" class="back-btn">
+      <i class="fas fa-chevron-right"></i>
+    </a>
+    <a id="profile-link" href="#" class="user-row">
+      <div class="avatar-with-dot">
+        <img id="header-avatar" src="https://via.placeholder.com/40" class="avatar">
+        <div id="header-online" class="online-dot" style="display:none"></div>
+      </div>
+      <div class="meta">
+        <div id="header-name" class="name">...</div>
+        <div id="header-status" class="sub"></div>
+      </div>
+    </a>
+  </div>
+
+  <div class="glass">
+    <div id="messages" class="messages"></div>
+    
+    <div id="reaction-menu" class="reaction-menu">
+      <div class="reaction-item" onclick="sendReaction('😂')">😂</div>
+      <div class="reaction-item" onclick="sendReaction('♥️')">♥️</div>
+      <div class="reaction-item" onclick="sendReaction('😢')">😢</div>
+      <div class="reaction-item" onclick="sendReaction('😡')">😡</div>
+      <div class="reaction-item" onclick="sendReaction('👍')">👍</div>
+    </div>
+  </div>
+
+  <form id="composer" class="composer" onsubmit="return false;">
+    
+    <div id="reply-container">
+      <div class="reply-info">
+        <div class="reply-to-label">الرد على <span id="reply-to-name"></span></div>
+        <div id="reply-to-text" class="reply-preview-text"></div>
+      </div>
+      <button type="button" class="close-btn" id="cancel-reply">
+        <i class="fas fa-times" style="font-size:12px"></i>
+      </button>
+    </div>
+
+    <div id="file-preview-area"></div>
+
+    <div class="input-row">
+      <input type="file" id="media-input" style="display:none" accept="image/*,video/*,audio/*">
+      
+      <button type="button" class="action-btn" id="attach-btn">
+        <i class="fas fa-paperclip" style="font-size:16px"></i>
+      </button>
+
+      <div id="recording-ui">
+        <div class="rec-dot"></div>
+        <div class="rec-time" id="rec-timer">0:00</div>
+        <div class="cancel-rec" id="cancel-rec-btn">إلغاء</div>
+      </div>
+
+      <textarea id="msg-input" placeholder="اكتب رسالة..." rows="1"></textarea>
+      
+      <button type="button" class="action-btn" id="mic-btn">
+        <i class="fas fa-microphone" style="font-size:16px"></i>
+      </button>
+
+      <button type="submit" class="action-btn send-btn" id="send-btn" style="display:none">
+        <i class="fas fa-paper-plane" style="font-size:16px"></i>
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+// --- Config & State ---
+const urlParams = new URLSearchParams(window.location.search);
+const otherId = urlParams.get('contactId');
+let myId = null;
+let lastMessagesHash = ''; 
+let replyData = null; 
+let uploadedFile = null;
+let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
+let recTimerInterval = null;
+let audioWaveSurfers = {}; // Stores { id: WaveSurferInstance }
+let composerWaveSurfer = null;
+let activeLongPressMsgId = null;
+
+// DOM Elements
+const messagesEl = document.getElementById('messages');
+const msgInput = document.getElementById('msg-input');
+const sendBtn = document.getElementById('send-btn');
+const micBtn = document.getElementById('mic-btn');
+const attachBtn = document.getElementById('attach-btn');
+const mediaInput = document.getElementById('media-input');
+const replyContainer = document.getElementById('reply-container');
+const recordingUi = document.getElementById('recording-ui');
+const filePreviewArea = document.getElementById('file-preview-area');
+const reactionMenu = document.getElementById('reaction-menu');
+
+const VERIFIED_ICON = `<img src="https://res.cloudinary.com/duixjs8az/image/upload/v1768036959/post_media/1768036959482-badge.png" style="width:14px;height:14px;margin-right:4px;vertical-align:middle;">`;
+
+// --- Init ---
+async function init() {
+  if (!otherId) return window.location.href = '/chat_list';
+  
+  // Fetch My ID
+  try {
+    const myRes = await fetch('/api/profile');
+    const myData = await myRes.json();
+    myId = myData.id;
+  } catch(e) { console.error(e); }
+
+  // Header Info
+  fetchProfile();
+
+  // Load Messages
+  await loadMessages(true);
+  setInterval(() => loadMessages(false), 3000);
+
+  // Resize Textarea
+  msgInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    toggleSendButton();
+  });
+
+  // Hide Reaction Menu on click elsewhere
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.reaction-menu') && activeLongPressMsgId) {
+       reactionMenu.style.display = 'none';
+       activeLongPressMsgId = null;
+    }
+  });
+  
+  // Handle Scroll to hide menu
+  messagesEl.addEventListener('scroll', () => {
+    if(reactionMenu.style.display === 'flex') {
+        reactionMenu.style.display = 'none';
+        activeLongPressMsgId = null;
+    }
+  });
+
+  // Close Image Overlay on ESC
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeImageModal();
+  });
+}
+
+// --- Fetch Profile ---
+async function fetchProfile() {
+  try {
+    const res = await fetch(`/api/profile/${otherId}`);
+    const data = await res.json();
+    if(data) {
+      document.getElementById('header-name').innerHTML = escapeHtml(data.full_name || data.username) + (data.is_verified ? VERIFIED_ICON : '');
+      document.getElementById('header-avatar').src = data.profile_picture_url || 'https://via.placeholder.com/40';
+      document.getElementById('profile-link').href = `/profile?userId=${otherId}`;
+      if(data.is_online) {
+        document.getElementById('header-online').style.display = 'block';
+        const st = document.getElementById('header-status');
+        st.textContent = 'متصل الآن';
+        st.style.color = '#22c55e';
+      } else {
+         document.getElementById('header-status').textContent = 'غير متصل';
+      }
+    }
+  } catch(e) {}
+}
+
+// --- Messages Logic (FIXED: Append only, Don't clear innerHTML) ---
+async function loadMessages(initial = false) {
+  try {
+    // Request up to 1000 messages to show full history
+    const res = await fetch(`/api/messages/${otherId}?limit=1000`);
+    const data = await res.json();
+    if(!data.ok) return;
+
+    // Detect if content changed to avoid heavy processing
+    const currentHash = JSON.stringify(data.messages.map(m => m.messageId + (m.reaction || '')));
+    if (currentHash === lastMessagesHash) return; 
+    lastMessagesHash = currentHash;
+
+    const isAtBottom = messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 60;
+    
+    // Process messages intelligently (Diffing)
+    data.messages.forEach(msg => {
+        const existingMsg = document.querySelector(`[data-msg-id="${msg.messageId}"]`);
+        
+        if (!existingMsg) {
+            // New message: append it
+            const msgNode = createMsgElement(msg);
+            messagesEl.appendChild(msgNode);
+        } else {
+            // Update existing message (e.g. Reactions changed)
+            const existingBadge = existingMsg.querySelector('.msg-reaction-badge');
+            if(msg.reaction) {
+                if(existingBadge) {
+                   if(existingBadge.textContent !== msg.reaction) existingBadge.textContent = msg.reaction;
+                } else {
+                   const bubble = existingMsg.querySelector('.msg');
+                   bubble.style.marginBottom = "8px"; 
+                   const badge = document.createElement('div');
+                   badge.className = 'msg-reaction-badge';
+                   badge.textContent = msg.reaction;
+                   bubble.appendChild(badge);
+                }
+            } else if(existingBadge) {
+                existingBadge.remove();
+            }
+        }
+    });
+
+    if (initial) {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      messagesEl.style.opacity = '1';
+      markRead();
+    } else if (isAtBottom) {
+      scrollToBottom();
+      markRead();
+    }
+  } catch(e) { console.error(e); }
+}
+
+function scrollToBottom() {
+  messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
+}
+
+async function markRead() {
+  await fetch('/api/mark_read', {
+    method: 'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({other_id: otherId})
+  });
+}
+
+// --- Message Builder ---
+function createMsgElement(msg) {
+  const isMe = msg.senderId === myId;
+  const wrapper = document.createElement('div');
+  wrapper.className = `msg-container ${isMe ? 'outgoing-container' : 'incoming-container'}`;
+
+  // Reply Icon for Swipe
+  const icon = document.createElement('div');
+  icon.className = 'reply-indicator-icon';
+  icon.innerHTML = '<i class="fas fa-reply"></i>';
+  if (isMe) icon.style.left = '10px'; else icon.style.right = '10px';
+  wrapper.appendChild(icon);
+
+  const inner = document.createElement('div');
+  inner.className = 'msg-wrapper';
+  
+  const bubble = document.createElement('div');
+  bubble.className = 'msg';
+  handleMessageInteractions(bubble, msg.messageId);
+
+  // Reply Context
+  if (msg.replied_to_id) {
+    const ctx = document.createElement('div');
+    ctx.className = 'reply-context';
+    ctx.innerHTML = `
+      <div class="reply-context-sender">${escapeHtml(msg.replied_to_sender || 'مستخدم')}</div>
+      <div class="reply-context-text">${getLocalizedType(msg.replied_to_content)}</div>
+    `;
+    ctx.onclick = (e) => {
+        e.stopPropagation();
+        const original = document.querySelector(`[data-msg-id="${msg.replied_to_id}"]`);
+        if(original) original.scrollIntoView({behavior:'smooth', block:'center'});
+    };
+    bubble.appendChild(ctx);
+  }
+
+  // Content
+  let contentHtml = '';
+  if (msg.media) {
+    const url = msg.media.url;
+    const type = msg.media.type || '';
+    
+    if (type.startsWith('image')) {
+        contentHtml += `<img src="${url}" class="msg-image" onclick="openImageModal('${url}')">`;
+    } else if (type.startsWith('video')) {
+        contentHtml += `<video src="${url}" controls playsinline class="msg-video"></video>`;
+    } else if (type.startsWith('audio') || url.endsWith('.webm') || url.endsWith('.mp3')) {
+       const audioId = 'audio-' + msg.messageId;
+       contentHtml += `
+         <div class="msg-audio-player">
+           <button class="audio-play-btn" onclick="playAudio('${url}', '${audioId}', this)">
+             <i class="fas fa-play" style="font-size:14px"></i>
+           </button>
+           <div id="${audioId}" class="audio-waveform-container"></div>
+           <div class="audio-time">...</div>
+         </div>
+       `;
+       // Initialize waveform with delay to ensure element is ready
+       setTimeout(() => initWaveform(audioId, url, isMe), 100);
+    }
+  }
+  
+  if (msg.content) {
+    contentHtml += `<div style="margin-top:${msg.media?'6px':'0'}">${escapeHtml(msg.content)}</div>`;
+  }
+  
+  // Meta
+  const time = new Date(msg.timestamp).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+  const check = isMe ? (msg.is_read ? '<i class="fas fa-check-double" style="color:#6ee7b7"></i>' : '<i class="fas fa-check"></i>') : '';
+  contentHtml += `<div class="msg-meta">${time} ${check}</div>`;
+
+  if (msg.reaction) {
+    bubble.style.marginBottom = "8px"; 
+    const badge = document.createElement('div');
+    badge.className = 'msg-reaction-badge';
+    badge.textContent = msg.reaction;
+    bubble.appendChild(badge);
+  }
+
+  bubble.innerHTML += contentHtml;
+  inner.appendChild(bubble);
+  wrapper.appendChild(inner);
+
+  enableSwipeToReply(wrapper, inner, icon, msg);
+  wrapper.setAttribute('data-msg-id', msg.messageId);
+  return wrapper;
+}
+
+// --- Image Lightbox Functions ---
+function openImageModal(src) {
+  const overlay = document.getElementById('image-overlay');
+  const img = document.getElementById('overlay-img');
+  img.src = src;
+  overlay.style.display = 'flex';
+  setTimeout(() => overlay.classList.add('active'), 10);
+}
+
+function closeImageModal(e) {
+  if(e && e.target.id === 'overlay-img') return;
+  const overlay = document.getElementById('image-overlay');
+  overlay.classList.remove('active');
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    document.getElementById('overlay-img').src = '';
+  }, 300);
+}
+
+// --- Interactions: Double Tap & Long Press ---
+function handleMessageInteractions(element, messageId) {
+  let touchStartTime = 0;
+  let longPressTimer = null;
+  let lastTap = 0;
+
+  element.addEventListener('click', (e) => {
+    if(e.target.closest('button') || e.target.closest('img')) return;
+    
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      sendReaction('♥️', messageId);
+      createHeartAnimation(element);
+    }
+    lastTap = now;
+  });
+
+  element.addEventListener('touchstart', (e) => {
+    touchStartTime = Date.now();
+    longPressTimer = setTimeout(() => {
+      showReactionMenu(element, messageId);
+    }, 500); 
+  }, {passive: true});
+
+  element.addEventListener('touchend', () => {
+    if (Date.now() - touchStartTime < 500) {
+      clearTimeout(longPressTimer);
+    }
+  });
+  
+  element.addEventListener('touchmove', () => clearTimeout(longPressTimer)); 
+
+  element.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showReactionMenu(element, messageId);
+  });
+}
+
+function showReactionMenu(element, messageId) {
+  activeLongPressMsgId = messageId;
+  const rect = element.getBoundingClientRect();
+  
+  reactionMenu.style.display = 'flex';
+  
+  const menuWidth = reactionMenu.offsetWidth;
+  const menuHeight = reactionMenu.offsetHeight;
+  
+  let top = rect.top - menuHeight - 10;
+  let left = rect.left + (rect.width / 2) - (menuWidth / 2);
+  
+  if (top < 10) top = rect.bottom + 10;
+  if (left < 10) left = 10;
+  if (left + menuWidth > window.innerWidth) left = window.innerWidth - menuWidth - 10;
+  
+  reactionMenu.style.top = `${top}px`;
+  reactionMenu.style.left = `${left}px`;
+  
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+
+async function sendReaction(emoji, messageId = activeLongPressMsgId) {
+  if (!messageId) return;
+  reactionMenu.style.display = 'none';
+
+  try {
+    const msgEl = document.querySelector(`[data-msg-id="${messageId}"] .msg`);
+    if(msgEl) {
+        let badge = msgEl.querySelector('.msg-reaction-badge');
+        if(!badge) {
+            badge = document.createElement('div');
+            badge.className = 'msg-reaction-badge';
+            msgEl.appendChild(badge);
+        }
+        badge.textContent = emoji;
+    }
+
+    await fetch(`/api/messages/${otherId}/reactions/${messageId}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ reaction: emoji })
+    });
+  } catch (e) { console.error(e); }
+}
+
+function createHeartAnimation(element) {
+  const heart = document.createElement('div');
+  heart.textContent = '♥️';
+  heart.style.position = 'absolute';
+  heart.style.left = '50%';
+  heart.style.top = '50%';
+  heart.style.transform = 'translate(-50%, -50%) scale(0)';
+  heart.style.fontSize = '40px';
+  heart.style.transition = 'all 0.4s ease-out';
+  heart.style.zIndex = '100';
+  element.appendChild(heart);
+  
+  requestAnimationFrame(() => {
+    heart.style.transform = 'translate(-50%, -100%) scale(1.5)';
+    heart.style.opacity = '0';
+  });
+  setTimeout(() => heart.remove(), 500);
+}
+
+// --- Audio Preview ---
+function renderComposerPreview(file, type) {
+  filePreviewArea.innerHTML = '';
+  
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'flex:1; display:flex; align-items:center; gap:10px; overflow:hidden;';
+  
+  if (type === 'audio') {
+     const waveContainer = document.createElement('div');
+     waveContainer.id = 'composer-wave';
+     waveContainer.style.flex = '1';
+     
+     const icon = document.createElement('div');
+     icon.innerHTML = '<i class="fas fa-microphone" style="color:#ef4444; font-size:16px;"></i>';
+     
+     const timeDisplay = document.createElement('div');
+     timeDisplay.style.cssText = 'color:#fff; font-size:12px; font-weight:bold; min-width:30px;';
+     timeDisplay.textContent = document.getElementById('rec-timer').textContent || '0:00';
+     
+     wrapper.appendChild(icon);
+     wrapper.appendChild(waveContainer);
+     wrapper.appendChild(timeDisplay);
+     filePreviewArea.appendChild(wrapper);
+
+     const url = URL.createObjectURL(file);
+     setTimeout(() => {
+        if(composerWaveSurfer) composerWaveSurfer.destroy();
+        composerWaveSurfer = WaveSurfer.create({
+            container: '#composer-wave',
+            waveColor: 'rgba(255,255,255,0.4)',
+            progressColor: '#ffffff',
+            cursorColor: 'transparent',
+            barWidth: 2, barRadius: 2, height: 30,
+            url: url
+        });
+     }, 50);
+
+  } else if (type === 'video') {
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      video.className = 'file-thumb';
+      video.muted = true;
+      video.onloadedmetadata = () => video.currentTime = 1; 
+      
+      const info = document.createElement('div');
+      info.className = 'preview-info';
+      info.innerHTML = `<div class="preview-filename">فيديو</div><div class="preview-sub">${(file.size/1024/1024).toFixed(1)} MB</div>`;
+      
+      wrapper.appendChild(video);
+      wrapper.appendChild(info);
+      filePreviewArea.appendChild(wrapper);
+  } else {
+      const img = document.createElement('img');
+      img.className = 'file-thumb';
+      img.src = type === 'image' ? URL.createObjectURL(file) : '';
+      if(type !== 'image') img.style.display = 'none';
+      
+      const info = document.createElement('div');
+      info.className = 'preview-info';
+      info.innerHTML = `<div class="preview-filename">${file.name}</div><div class="preview-sub">${(file.size/1024).toFixed(0)} KB</div>`;
+      
+      if(type==='image') wrapper.appendChild(img);
+      else wrapper.appendChild(document.createElement('div').innerHTML='<i class="fas fa-file text-white fa-2x"></i>');
+      wrapper.appendChild(info);
+      filePreviewArea.appendChild(wrapper);
+  }
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'close-btn';
+  closeBtn.innerHTML = '<i class="fas fa-times" style="font-size:12px"></i>';
+  closeBtn.onclick = () => {
+    uploadedFile = null;
+    mediaInput.value = '';
+    filePreviewArea.style.display = 'none';
+    if(composerWaveSurfer) { composerWaveSurfer.destroy(); composerWaveSurfer = null; }
+    toggleSendButton();
+  };
+  
+  filePreviewArea.appendChild(closeBtn);
+  filePreviewArea.style.display = 'flex';
+}
+
+// --- Attachments ---
+attachBtn.onclick = () => mediaInput.click();
+mediaInput.onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  uploadedFile = file;
+  let type = 'file';
+  if(file.type.startsWith('image')) type = 'image';
+  else if(file.type.startsWith('video')) type = 'video';
+  else if(file.type.startsWith('audio')) type = 'audio';
+  
+  renderComposerPreview(file, type);
+  toggleSendButton();
+};
+
+// --- Recording ---
+micBtn.onclick = () => { if (isRecording) stopRecording(); else startRecording(); };
+document.getElementById('cancel-rec-btn').onclick = cancelRecording;
+
+function startRecording() {
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.start();
+    isRecording = true;
+    
+    msgInput.style.display = 'none';
+    micBtn.style.display = 'none';
+    attachBtn.style.display = 'none';
+    recordingUi.style.display = 'flex';
+    
+    let sec = 0;
+    recTimerInterval = setInterval(() => {
+      sec++;
+      document.getElementById('rec-timer').textContent = fmtTime(sec);
+    }, 1000);
+
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+       const blob = new Blob(audioChunks, { type: 'audio/webm' });
+       uploadedFile = new File([blob], "voice.webm", { type: 'audio/webm' });
+       resetRecordingUI();
+       renderComposerPreview(uploadedFile, 'audio'); 
+       toggleSendButton();
+    };
+  }).catch(e => alert('Mic error'));
+}
+
+function stopRecording() { if(mediaRecorder) mediaRecorder.stop(); }
+function cancelRecording() {
+  if(mediaRecorder) { mediaRecorder.stop(); uploadedFile = null; audioChunks = []; }
+  resetRecordingUI();
+}
+function resetRecordingUI() {
+  clearInterval(recTimerInterval);
+  isRecording = false;
+  document.getElementById('rec-timer').textContent = '0:00';
+  recordingUi.style.display = 'none';
+  msgInput.style.display = 'block';
+  micBtn.style.display = 'flex';
+  attachBtn.style.display = 'flex';
+}
+
+function toggleSendButton() {
+  const hasContent = msgInput.value.trim().length > 0 || uploadedFile;
+  sendBtn.style.display = hasContent ? 'flex' : 'none';
+  micBtn.style.display = hasContent ? 'none' : 'flex';
+}
+
+// --- Audio Player Logic (FIXED: High Contrast White) ---
+function initWaveform(containerId, url, isMe) {
+  const container = document.getElementById(containerId);
+  if (!container || audioWaveSurfers[containerId]) return;
+
+  try {
+      const ws = WaveSurfer.create({
+        container: container,
+        // لون الموجة غير المشغلة (أبيض شفاف ليكون واضحاً على الأسود)
+        waveColor: 'rgba(255, 255, 255, 0.4)', 
+        // لون الموجة المشغلة (أبيض ناصع)
+        progressColor: '#ffffff', 
+        // لون المؤشر
+        cursorColor: '#ffffff',
+        cursorWidth: 2,
+        // سماكة الخطوط
+        barWidth: 3, 
+        barRadius: 3, 
+        barGap: 3,
+        height: 34,
+        responsive: true,
+        url: url
+      });
+      
+      ws.on('ready', () => {
+        const parent = container.parentElement;
+        if(parent) {
+            const timeEl = parent.querySelector('.audio-time');
+            if(timeEl) timeEl.textContent = fmtTime(ws.getDuration());
+        }
+      });
+      
+      ws.on('finish', () => {
+         const btn = container.parentElement.querySelector('.audio-play-btn');
+         if(btn) btn.innerHTML = '<i class="fas fa-play" style="font-size:14px"></i>';
+         ws.seekTo(0);
+      });
+
+      audioWaveSurfers[containerId] = ws;
+  } catch(err) {
+      console.error("Error creating WaveSurfer", err);
+  }
+}
+
+function playAudio(url, id, btn) {
+  const ws = audioWaveSurfers[id];
+  if(!ws) return;
+  ws.playPause();
+  if (ws.isPlaying()) {
+      btn.innerHTML = '<i class="fas fa-pause" style="font-size:14px"></i>';
+  } else {
+      btn.innerHTML = '<i class="fas fa-play" style="font-size:14px"></i>';
+  }
+  
+  ws.on('play', () => btn.innerHTML = '<i class="fas fa-pause" style="font-size:14px"></i>');
+  ws.on('pause', () => btn.innerHTML = '<i class="fas fa-play" style="font-size:14px"></i>');
+}
+
+// --- Helpers ---
+function fmtTime(s) {
+  const m = Math.floor(s/60);
+  const sc = Math.floor(s%60);
+  return `${m}:${sc<10?'0':''}${sc}`;
+}
+function getLocalizedType(content) {
+  if (!content) return '';
+  if (content.includes('صورة') || content.includes('فيديو')) return content;
+  return content;
+}
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// --- Sending ---
+sendBtn.onclick = async () => {
+  if(sendBtn.disabled) return;
+  const content = msgInput.value.trim();
+  if(!content && !uploadedFile) return;
+
+  // Show Spinner
+  sendBtn.disabled = true;
+  const originalIcon = sendBtn.innerHTML;
+  sendBtn.innerHTML = '<div class="sending-spinner"></div>';
+
+  const fd = new FormData();
+  fd.append('other_id', otherId);
+  if(content) fd.append('content', content);
+  if(uploadedFile) fd.append('media', uploadedFile);
+  if(replyData) {
+    fd.append('replied_to_id', replyData.id);
+    fd.append('replied_to_sender', replyData.sender);
+    fd.append('replied_to_content', replyData.content);
+  }
+
+  try {
+    const res = await fetch('/api/messages/send', { method:'POST', body:fd });
+    const d = await res.json();
+    if(d.ok) {
+        // Immediate update handled by polling/server
+      scrollToBottom();
+      msgInput.value = '';
+      msgInput.style.height = '38px';
+      
+      uploadedFile = null;
+      filePreviewArea.style.display = 'none';
+      if(composerWaveSurfer) { composerWaveSurfer.destroy(); composerWaveSurfer = null; }
+      
+      replyData = null;
+      replyContainer.style.display = 'none';
+      
+      toggleSendButton();
+    }
+  } catch(e) { alert('Error sending'); }
+  
+  sendBtn.innerHTML = originalIcon;
+  sendBtn.disabled = false;
+};
+
+// --- Swipe Logic ---
+function enableSwipeToReply(container, contentEl, iconEl, msg) {
+  let startX = 0, currentX = 0, isDragging = false;
+  contentEl.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isDragging=true; contentEl.style.transition='none'; }, {passive:true});
+  contentEl.addEventListener('touchmove', e => {
+    if(!isDragging) return;
+    const diff = e.touches[0].clientX - startX;
+    const isMe = msg.senderId === myId;
+    let allowed = (!isMe && diff < 0) || (isMe && diff > 0);
+    if(allowed && Math.abs(diff) < 150) {
+      currentX = diff;
+      contentEl.style.transform = `translateX(${diff}px)`;
+      iconEl.style.transform = `translateY(-50%) scale(${Math.min(Math.abs(diff)/60, 1)})`;
+    }
+  }, {passive:true});
+  contentEl.addEventListener('touchend', () => {
+    isDragging = false;
+    contentEl.style.transition = 'transform 0.3s';
+    contentEl.style.transform = 'translateX(0)';
+    iconEl.style.transform = 'translateY(-50%) scale(0)';
+    if(Math.abs(currentX) > 60) triggerReply(msg);
+    currentX = 0;
+  });
+}
+
+function triggerReply(msg) {
+  const isMe = msg.senderId === myId;
+  const senderName = isMe ? 'أنت' : document.getElementById('header-name').textContent;
+  let preview = msg.content;
+  if(!preview && msg.media) {
+     if(msg.media.type.startsWith('image')) preview = '📷 صورة';
+     else if(msg.media.type.startsWith('video')) preview = '🎥 فيديو';
+     else if(msg.media.type.startsWith('audio') || msg.media.url.endsWith('.webm')) preview = '🎤 تسجيل صوتي';
+  }
+  replyData = { id: msg.messageId, sender: senderName, content: preview };
+  document.getElementById('reply-to-name').textContent = senderName;
+  document.getElementById('reply-to-text').textContent = preview;
+  replyContainer.style.display = 'flex';
+  msgInput.focus();
+}
+document.getElementById('cancel-reply').onclick = () => { replyData=null; replyContainer.style.display='none'; };
+
+init();
+</script>
+</body>
+</html>
