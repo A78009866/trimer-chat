@@ -612,6 +612,92 @@ app.post('/api/admin/users/:userId/verify', requireAuth, requireAdmin, async (re
   }
 });
 
+// ==========================================
+// مسارات نظام القصص (Stories)
+// ==========================================
+
+// 1. رفع قصة جديدة
+app.post('/api/stories', upload.single('media'), async (req, res) => {
+    try {
+        if (!req.session.user) return res.status(401).json({ error: 'غير مصرح لك' });
+        
+        const file = req.file;
+        if (!file) return res.status(400).json({ error: 'الرجاء إرفاق صورة أو فيديو' });
+
+        const mediaUrl = file.path;
+        // تحديد نوع الملف
+        const mediaType = file.mimetype.startsWith('video') ? 'video' : 'image';
+        const audioUrl = req.body.audioUrl || null; // رابط الأغنية إن وجد
+
+        const newStoryRef = getDatabase().ref('stories').push();
+        const storyData = {
+            id: newStoryRef.key,
+            userId: req.session.user.uid,
+            username: req.session.user.username,
+            profilePic: req.session.user.profile_picture_url || DEFAULT_PROFILE_PIC_URL,
+            mediaUrl,
+            mediaType,
+            audioUrl,
+            timestamp: admin.database.ServerValue.TIMESTAMP,
+            likes: {}
+        };
+
+        await newStoryRef.set(storyData);
+        res.status(200).json({ success: true, story: storyData });
+    } catch (error) {
+        console.error('Story upload error:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء رفع القصة' });
+    }
+});
+
+// 2. جلب القصص (التي لم يمر عليها 24 ساعة)
+app.get('/api/stories', async (req, res) => {
+    try {
+        const storiesRef = getDatabase().ref('stories');
+        const snapshot = await storiesRef.once('value');
+        const stories = [];
+        const now = Date.now();
+        const ONE_DAY = 24 * 60 * 60 * 1000;
+
+        snapshot.forEach(child => {
+            const story = child.val();
+            // تصفية القصص التي مرت عليها 24 ساعة
+            if (now - story.timestamp < ONE_DAY) {
+                stories.push(story);
+            } else {
+                // حذف القصة من قاعدة البيانات إذا انتهت صلاحيتها
+                child.ref.remove();
+            }
+        });
+        
+        // ترتيب القصص من الأحدث للأقدم
+        res.status(200).json({ stories: stories.sort((a, b) => b.timestamp - a.timestamp) });
+    } catch (error) {
+        res.status(500).json({ error: 'فشل في جلب القصص' });
+    }
+});
+
+// 3. الإعجاب بالقصة
+app.post('/api/stories/:storyId/like', async (req, res) => {
+    try {
+        if (!req.session.user) return res.status(401).json({ error: 'غير مصرح' });
+        
+        const storyId = req.params.storyId;
+        const userId = req.session.user.uid;
+        const likeRef = getDatabase().ref(`stories/${storyId}/likes/${userId}`);
+        
+        const snapshot = await likeRef.once('value');
+        if (snapshot.exists()) {
+            await likeRef.remove(); // إزالة الإعجاب
+            res.json({ liked: false });
+        } else {
+            await likeRef.set(true); // إضافة الإعجاب
+            res.json({ liked: true });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'حدث خطأ' });
+    }
+});
 // ---------------- API: Chat & Messages ----------------
 
 app.get('/api/chats', requireAuth, async (req, res) => {
