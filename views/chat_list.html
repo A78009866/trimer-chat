@@ -513,7 +513,22 @@
             border: 2px solid #3b82f6;
             background: rgba(59, 130, 246, 0.1);
         }
+/* إخفاء شريط التمرير لأجل القصص */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* تأثير الزجاج الأسود الاحترافي */
+.glass-story {
+    background: rgba(15, 15, 15, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+}
+
+.story-progress-bar {
+    transition: width 0.1s linear;
+}
     </style>
 </head>
 <body class="min-h-screen">
@@ -606,7 +621,74 @@
     })();
 </script>
 
+<div class="mb-4 w-full max-w-2xl mx-auto px-2">
+    <div id="stories-tray" class="flex gap-3 overflow-x-auto hide-scrollbar py-2">
+        <div onclick="document.getElementById('uploadStoryModal').classList.remove('hidden')" 
+             class="glass-story flex-shrink-0 w-24 h-36 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition relative overflow-hidden group">
+            <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center mb-2 group-hover:scale-110 transition shadow-[0_0_15px_rgba(79,70,229,0.5)]">
+                <i class="fas fa-plus text-white text-sm"></i>
+            </div>
+            <span class="text-[10px] font-bold text-gray-300">إضافة قصة</span>
+        </div>
+        </div>
+</div>
 
+<div id="uploadStoryModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="glass-story w-full max-w-md rounded-2xl p-6 relative">
+        <button onclick="document.getElementById('uploadStoryModal').classList.add('hidden')" class="absolute top-4 left-4 text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-xl font-bold mb-4 text-white">إنشاء قصة جديدة</h3>
+        
+        <form id="storyForm" onsubmit="submitStory(event)">
+            <label class="block mb-4 cursor-pointer border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-indigo-500 transition">
+                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                <div class="text-sm text-gray-300" id="storyFileName">اختر صورة أو فيديو</div>
+                <input type="file" id="storyMedia" accept="image/*,video/*" class="hidden" onchange="handleStoryFileSelect(this)" required>
+            </label>
+
+            <div id="musicSection" class="hidden mb-4">
+                <p class="text-xs text-gray-400 mb-2">أضف مقطعاً صوتياً لقصتك (اختياري)</p>
+                <div class="relative">
+                    <input type="text" id="musicSearch" placeholder="ابحث عن أغنية أو فنان..." class="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <button type="button" onclick="searchMusic()" class="absolute left-2 top-2 text-indigo-400 text-sm font-bold">بحث</button>
+                </div>
+                <div id="musicResults" class="mt-2 max-h-32 overflow-y-auto hide-scrollbar flex flex-col gap-2"></div>
+                <input type="hidden" id="selectedAudioUrl">
+            </div>
+
+            <button type="submit" id="storySubmitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-[0_0_20px_rgba(79,70,229,0.3)]">
+                نشر القصة
+            </button>
+        </form>
+    </div>
+</div>
+
+<div id="storyViewer" class="hidden fixed inset-0 z-[60] bg-black flex flex-col">
+    <div class="flex gap-1 p-2 pt-4" id="storyProgressContainer">
+        <div class="h-1 bg-white/20 w-full rounded-full overflow-hidden">
+            <div id="storyProgressBar" class="h-full bg-white w-0 story-progress-bar"></div>
+        </div>
+    </div>
+    
+    <div class="flex items-center justify-between p-4 absolute top-6 w-full z-10">
+        <div class="flex items-center gap-3">
+            <img id="viewerProfilePic" src="" class="w-10 h-10 rounded-full border border-white/20 object-cover">
+            <span id="viewerUsername" class="text-white font-bold text-shadow-sm"></span>
+        </div>
+        <button onclick="closeStory()" class="text-white text-2xl drop-shadow-md"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="flex-1 relative flex items-center justify-center overflow-hidden">
+        <img id="viewerImage" class="hidden max-w-full max-h-full object-contain">
+        <video id="viewerVideo" class="hidden max-w-full max-h-full object-contain" playsinline></video>
+        <audio id="viewerAudio" class="hidden"></audio>
+    </div>
+
+    <div class="absolute bottom-8 right-6 z-10">
+        <button id="storyLikeBtn" class="text-white text-3xl drop-shadow-lg transition transform hover:scale-110">
+            <i class="far fa-heart"></i>
+        </button>
+    </div>
+</div>
 
     <main class="max-w-6xl mx-auto p-4">
         <div id="postsFeed" class="max-w-xl mx-auto mt-6 space-y-4">
@@ -2550,6 +2632,220 @@ window.receiveAndroidToken = function(token) {
         body: JSON.stringify({ token: token })
     }).catch(err => console.error("Error saving token", err));
 };
+
+// ==========================================
+// منطق تشغيل القصص (Stories Logic)
+// ==========================================
+
+let activeStoryTimeout;
+let currentStoryId = null;
+
+// تحميل القصص عند فتح الصفحة
+async function loadStories() {
+    try {
+        const res = await fetch('/api/stories');
+        const data = await res.json();
+        
+        const tray = document.getElementById('stories-tray');
+        // نحافظ على الزر الأول (إضافة قصة) ونمسح الباقي
+        tray.innerHTML = tray.firstElementChild.outerHTML; 
+
+        data.stories.forEach(story => {
+            const storyEl = document.createElement('div');
+            // تصميم البطاقة الزجاجية لكل قصة
+            storyEl.className = 'glass-story flex-shrink-0 w-24 h-36 rounded-2xl flex flex-col justify-end p-2 cursor-pointer hover:scale-105 transition relative overflow-hidden bg-cover bg-center';
+            // إذا كانت صورة نعرضها كخلفية، إذا فيديو نضع صورة افتراضية أو نتركه أسود
+            storyEl.style.backgroundImage = story.mediaType === 'image' ? `url(${story.mediaUrl})` : 'url(https://res.cloudinary.com/duixjs8az/image/upload/v1/post_media/video_placeholder.png)'; // يفضل وضع صورة placeholder للفيديو
+            
+            // طبقة تدرج لوني لجعل النص مقروء
+            storyEl.innerHTML = `
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                <div class="relative z-10 flex flex-col items-center">
+                    <img src="${story.profilePic}" class="w-8 h-8 rounded-full border-2 border-indigo-500 mb-1 object-cover">
+                    <span class="text-[10px] font-bold text-white truncate w-full text-center">${story.username}</span>
+                </div>
+            `;
+            
+            storyEl.onclick = () => openStory(story);
+            tray.appendChild(storyEl);
+        });
+    } catch (e) {
+        console.error('Error loading stories:', e);
+    }
+}
+
+// التعامل مع اختيار الملف (إظهار/إخفاء بحث الموسيقى)
+function handleStoryFileSelect(input) {
+    const file = input.files[0];
+    if (file) {
+        document.getElementById('storyFileName').innerText = file.name;
+        const musicSection = document.getElementById('musicSection');
+        if (file.type.startsWith('image/')) {
+            musicSection.classList.remove('hidden');
+        } else {
+            musicSection.classList.add('hidden');
+            document.getElementById('selectedAudioUrl').value = '';
+        }
+    }
+}
+
+// البحث عن الموسيقى باستخدام iTunes API (مجاني ولا يحتاج توثيق)
+async function searchMusic() {
+    const query = document.getElementById('musicSearch').value;
+    if (!query) return;
+    
+    const resultsContainer = document.getElementById('musicResults');
+    resultsContainer.innerHTML = '<p class="text-xs text-center text-gray-400">جاري البحث...</p>';
+    
+    try {
+        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=5`);
+        const data = await res.json();
+        
+        resultsContainer.innerHTML = '';
+        data.results.forEach(track => {
+            const item = document.createElement('div');
+            item.className = 'flex items-center justify-between p-2 hover:bg-white/10 rounded cursor-pointer transition';
+            item.innerHTML = `
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <img src="${track.artworkUrl100}" class="w-8 h-8 rounded">
+                    <div class="truncate text-xs">
+                        <div class="text-white font-bold truncate">${track.trackName}</div>
+                        <div class="text-gray-400 truncate">${track.artistName}</div>
+                    </div>
+                </div>
+                <button type="button" class="text-xs bg-indigo-600 px-2 py-1 rounded text-white">اختر</button>
+            `;
+            item.onclick = () => {
+                document.getElementById('selectedAudioUrl').value = track.previewUrl;
+                resultsContainer.innerHTML = `<div class="text-xs text-green-400 text-center">تم اختيار: ${track.trackName} <i class="fas fa-check"></i></div>`;
+            };
+            resultsContainer.appendChild(item);
+        });
+    } catch (e) {
+        resultsContainer.innerHTML = '<p class="text-xs text-red-400">فشل البحث</p>';
+    }
+}
+
+// رفع القصة
+async function submitStory(e) {
+    e.preventDefault();
+    const btn = document.getElementById('storySubmitBtn');
+    const fileInput = document.getElementById('storyMedia');
+    const audioUrl = document.getElementById('selectedAudioUrl').value;
+    
+    if (!fileInput.files[0]) return alert('اختر ملفاً');
+    
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع...';
+    btn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('media', fileInput.files[0]);
+    if (audioUrl) formData.append('audioUrl', audioUrl);
+
+    try {
+        const res = await fetch('/api/stories', { method: 'POST', body: formData });
+        if (res.ok) {
+            document.getElementById('uploadStoryModal').classList.add('hidden');
+            document.getElementById('storyForm').reset();
+            document.getElementById('selectedAudioUrl').value = '';
+            document.getElementById('musicSection').classList.add('hidden');
+            document.getElementById('storyFileName').innerText = 'اختر صورة أو فيديو';
+            loadStories(); // تحديث الشريط
+        }
+    } catch (e) {
+        alert('حدث خطأ أثناء الرفع');
+    } finally {
+        btn.innerHTML = 'نشر القصة';
+        btn.disabled = false;
+    }
+}
+
+// تشغيل/عرض القصة
+function openStory(story) {
+    currentStoryId = story.id;
+    const viewer = document.getElementById('storyViewer');
+    const img = document.getElementById('viewerImage');
+    const vid = document.getElementById('viewerVideo');
+    const aud = document.getElementById('viewerAudio');
+    const prog = document.getElementById('storyProgressBar');
+    const likeBtn = document.getElementById('storyLikeBtn');
+    
+    // إعداد واجهة المشاهد
+    document.getElementById('viewerUsername').innerText = story.username;
+    document.getElementById('viewerProfilePic').src = story.profilePic;
+    
+    // ضبط حالة زر الإعجاب (يعتمد على ما إذا كان المستخدم الحالي قد أعجب بها)
+    // يتطلب توفر myUserId كمتغير عام يمثل الـ UID الخاص بك
+    const isLiked = story.likes && myUserId && story.likes[myUserId]; 
+    likeBtn.innerHTML = isLiked ? '<i class="fas fa-heart text-red-500"></i>' : '<i class="far fa-heart"></i>';
+    likeBtn.onclick = () => likeStory(story.id, likeBtn);
+
+    // إخفاء كل الوسائط أولاً
+    img.classList.add('hidden');
+    vid.classList.add('hidden');
+    aud.pause();
+    vid.pause();
+    
+    viewer.classList.remove('hidden');
+    prog.style.width = '0%';
+    clearTimeout(activeStoryTimeout);
+
+    const DURATION = 10000; // 10 ثواني للصور كافتراضي
+
+    if (story.mediaType === 'image') {
+        img.src = story.mediaUrl;
+        img.classList.remove('hidden');
+        if (story.audioUrl) {
+            aud.src = story.audioUrl;
+            aud.play().catch(e => console.log('Audio auto-play prevented'));
+        }
+        
+        // تحريك شريط التقدم
+        setTimeout(() => prog.style.width = '100%', 50);
+        prog.style.transition = `width ${DURATION}ms linear`;
+        activeStoryTimeout = setTimeout(closeStory, DURATION);
+
+    } else if (story.mediaType === 'video') {
+        vid.src = story.mediaUrl;
+        vid.classList.remove('hidden');
+        vid.play().catch(e => console.log('Video auto-play prevented'));
+        
+        vid.onloadedmetadata = () => {
+            setTimeout(() => prog.style.width = '100%', 50);
+            prog.style.transition = `width ${vid.duration}s linear`;
+            activeStoryTimeout = setTimeout(closeStory, vid.duration * 1000);
+        };
+    }
+}
+
+function closeStory() {
+    clearTimeout(activeStoryTimeout);
+    document.getElementById('storyViewer').classList.add('hidden');
+    document.getElementById('viewerVideo').pause();
+    document.getElementById('viewerAudio').pause();
+    document.getElementById('storyProgressBar').style.transition = 'none';
+    currentStoryId = null;
+}
+
+// الإعجاب بالقصة
+async function likeStory(storyId, btnElement) {
+    try {
+        const res = await fetch(`/api/stories/${storyId}/like`, { method: 'POST' });
+        const data = await res.json();
+        if (data.liked) {
+            btnElement.innerHTML = '<i class="fas fa-heart text-red-500"></i>';
+            btnElement.classList.add('scale-125');
+            setTimeout(() => btnElement.classList.remove('scale-125'), 200);
+        } else {
+            btnElement.innerHTML = '<i class="far fa-heart"></i>';
+        }
+    } catch (e) {
+        console.error('Like error', e);
+    }
+}
+
+// استدعاء جلب القصص عند بدء التطبيق
+document.addEventListener('DOMContentLoaded', loadStories);
 </script>
 
 </body>
