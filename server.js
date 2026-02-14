@@ -612,15 +612,13 @@ app.post('/api/admin/users/:userId/verify', requireAuth, requireAdmin, async (re
   }
 });
 // ==========================================
-// مسارات نظام القصص (Stories) - تم التصحيح
+// مسارات نظام القصص (Stories)
 // ==========================================
 
 // 1. رفع قصة جديدة
 app.post('/api/stories', requireAuth, upload.single('media'), async (req, res) => {
     try {
         const userId = req.session.userId;
-        
-        // جلب بيانات المستخدم من قاعدة البيانات لأن الجلسة تحتوي فقط على userId
         const userSnap = await db.ref(`profiles/${userId}`).once('value');
         const userData = userSnap.val();
 
@@ -630,9 +628,8 @@ app.post('/api/stories', requireAuth, upload.single('media'), async (req, res) =
         if (!file) return res.status(400).json({ error: 'الرجاء إرفاق صورة أو فيديو' });
 
         const mediaUrl = file.path;
-        // تحديد نوع الملف
         const mediaType = file.mimetype.startsWith('video') ? 'video' : 'image';
-        const audioUrl = req.body.audioUrl || null; // رابط الأغنية إن وجد
+        const audioUrl = req.body.audioUrl || null; 
 
         const newStoryRef = db.ref('stories').push();
         const storyData = {
@@ -666,39 +663,83 @@ app.get('/api/stories', requireAuth, async (req, res) => {
 
         snapshot.forEach(child => {
             const story = child.val();
-            // تصفية القصص التي مرت عليها 24 ساعة
             if (now - story.timestamp < ONE_DAY) {
                 stories.push(story);
             } else {
-                // حذف القصة من قاعدة البيانات إذا انتهت صلاحيتها
-                child.ref.remove();
+                child.ref.remove(); // حذف تلقائي للقصص المنتهية
             }
         });
         
-        // ترتيب القصص من الأحدث للأقدم
-        res.status(200).json({ stories: stories.sort((a, b) => b.timestamp - a.timestamp) });
+        res.status(200).json({ stories: stories });
     } catch (error) {
         res.status(500).json({ error: 'فشل في جلب القصص' });
     }
 });
 
-// 3. الإعجاب بالقصة
+// 3. الإعجاب بالقصة (مع إرسال إشعار)
 app.post('/api/stories/:storyId/like', requireAuth, async (req, res) => {
     try {
         const storyId = req.params.storyId;
-        const userId = req.session.userId; // الاعتماد على الـ session الموحد
+        const userId = req.session.userId; 
+        
+        const storyRef = db.ref(`stories/${storyId}`);
         const likeRef = db.ref(`stories/${storyId}/likes/${userId}`);
         
         const snapshot = await likeRef.once('value');
+        
         if (snapshot.exists()) {
-            await likeRef.remove(); // إزالة الإعجاب
+            await likeRef.remove(); 
             res.json({ liked: false });
         } else {
-            await likeRef.set(true); // إضافة الإعجاب
+            await likeRef.set(true); 
+            
+            // إرسال إشعار لصاحب القصة إذا لم يكن هو نفسه المعجب
+            const storySnap = await storyRef.once('value');
+            const storyData = storySnap.val();
+            if (storyData && storyData.userId !== userId) {
+                const likerSnap = await db.ref(`profiles/${userId}`).once('value');
+                const likerProfile = likerSnap.val() || {};
+                
+                const notifRef = db.ref(`notifications/${storyData.userId}`).push();
+                await notifRef.set({
+                    id: notifRef.key,
+                    type: 'story_like', // نوع الإشعار مخصص للقصص
+                    from_user_id: userId,
+                    from_username: likerProfile.username || 'مستخدم',
+                    from_profile_picture_url: likerProfile.profile_picture_url || DEFAULT_PROFILE_PIC_URL,
+                    timestamp: admin.database.ServerValue.TIMESTAMP,
+                    is_read: false
+                });
+            }
+            
             res.json({ liked: true });
         }
     } catch (error) {
+        console.error('Story like error:', error);
         res.status(500).json({ error: 'حدث خطأ' });
+    }
+});
+
+// 4. حذف قصة
+app.delete('/api/stories/:storyId', requireAuth, async (req, res) => {
+    try {
+        const storyId = req.params.storyId;
+        const userId = req.session.userId;
+
+        const storyRef = db.ref(`stories/${storyId}`);
+        const snapshot = await storyRef.once('value');
+        const storyData = snapshot.val();
+
+        if (!storyData) return res.status(404).json({ error: 'القصة غير موجودة' });
+        
+        // التأكد من أن المستخدم الذي يحاول الحذف هو صاحب القصة
+        if (storyData.userId !== userId) return res.status(403).json({ error: 'غير مصرح لك بحذف هذه القصة' });
+
+        await storyRef.remove();
+        res.json({ success: true, message: 'تم الحذف بنجاح' });
+    } catch (error) {
+        console.error('Story delete error:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء الحذف' });
     }
 });
 // ---------------- API: Chat & Messages ----------------
