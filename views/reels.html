@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Reels - Trimer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+  <style>
+    html, body { 
+      margin: 0; padding: 0; 
+      height: 100%; width: 100%; 
+      background: black; color: white; 
+      font-family: 'Cairo', sans-serif; 
+      overflow: hidden; 
+    }
+
+    .swiper { width: 100%; height: 100%; }
+    .swiper-slide {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    video {
+      -webkit-user-select: none;
+      user-select: none;
+      background: black;
+    }
+
+    .big-heart {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 80px; color: white; 
+      text-shadow: 0 0 10px rgba(0,0,0,0.5); pointer-events: none; z-index: 20;
+    }
+    .big-heart.animate { animation: heart-pop 0.8s ease-out; }
+    @keyframes heart-pop {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      15% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; transform: rotate(-10deg); }
+      30% { transform: translate(-50%, -50%) scale(1.2); transform: rotate(10deg); }
+      50% { transform: translate(-50%, -50%) scale(1.0); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
+    }
+
+    .play-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(1);
+      z-index: 30;
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      transition: opacity 0.25s ease, transform 0.18s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .play-btn.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .play-btn i {
+      font-size: 34px;
+      color: white;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    }
+
+    /* شريط التقدم (RTL) */
+    .video-progress {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 10px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      z-index: 30;
+      overflow: visible;
+      cursor: pointer;
+    }
+    .video-progress .progress {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #007AFF 0%, #00D4FF 100%);
+      transition: width 0.08s linear;
+      border-radius: 999px;
+    }
+    .video-progress .thumb {
+      position: absolute;
+      top: 50%;
+      left: 0%;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #00D4FF, #007AFF);
+      border: 2px solid rgba(255,255,255,0.95);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 35;
+    }
+
+    .comments-sheet {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #111; border-radius: 16px 16px 0 0;
+      height: 60vh; transform: translateY(100%);
+      transition: transform 0.3s ease-out; z-index: 50;
+      display: flex; flex-direction: column;
+    }
+    .comments-sheet.open { transform: translateY(0); }
+    .overlay-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 40; display: none;
+    }
+    .overlay-backdrop.open { display: block; }
+
+    /* top bar */
+    .topbar {
+      position: fixed; top: 8px; left: 12px; right: 12px; z-index: 60;
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      pointer-events: none;
+    }
+    .topbar a, .topbar button { pointer-events: auto; }
+
+    /* VERIFIED BADGE IMAGE */
+    .verified-badge-img {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      margin-left: 6px;
+      object-fit: cover;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.06);
+      vertical-align: middle;
+    }
+
+    /* comment UI */
+    .comment-item { display:flex; gap:10px; align-items:flex-start; }
+    .comment-item img { width:36px; height:36px; border-radius:999px; object-fit:cover; }
+    .comment-body { flex:1; }
+    .comment-actions { display:flex; gap:10px; align-items:center; margin-top:6px; }
+    .small-avatar { width:28px;height:28px;border-radius:999px;object-fit:cover; }
+    .reply-item { margin-top:8px; padding:8px; background:#0f1112; border-radius:10px; }
+    .comments-sheet .verified-badge-img,
+    .comment-item .verified-badge-img,
+    .comments-sheet .verified-placeholder img.verified-badge-img {
+      width: 12px;
+      height: 12px;
+      margin-left: 6px;
+      vertical-align: middle;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="flex items-center gap-2">
+      <a href="/chat_list" class="text-white text-xl drop-shadow-lg p-2 bg-black/40 rounded-full"><i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="flex items-center gap-2">
+      <a id="createReelBtn" href="/create-reel" class="text-white text-xl drop-shadow-lg p-2 bg-black/40 rounded-full"><i class="fas fa-plus"></i></a>
+    </div>
+  </div>
+
+  <div class="swiper mySwiper">
+    <div class="swiper-wrapper" id="reelsWrapper"></div>
+  </div>
+
+  <div id="backdrop" class="overlay-backdrop"></div>
+  <div id="commentsSheet" class="comments-sheet border-t border-gray-800">
+    <div class="p-3 border-b border-gray-800 flex justify-between items-center">
+      <h3 class="font-bold text-sm">التعليقات</h3>
+      <button id="closeComments" class="text-gray-400 p-2"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="commentsList" class="flex-1 overflow-y-auto p-4 space-y-4 pb-20"></div>
+    <div class="p-3 border-t border-gray-800 flex items-center gap-2 bg-black absolute bottom-0 w-full">
+      <input type="text" id="commentInput" placeholder="أضف تعليقاً..." 
+             class="flex-1 bg-[#222] text-white text-sm rounded-full px-4 py-2 outline-none">
+      <button id="sendCommentBtn" class="text-blue-500 font-bold text-sm px-3">نشر</button>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<script>
+  const VERIFIED_IMG_URL = "https://res.cloudinary.com/duixjs8az/image/upload/v1768036959/post_media/1768036959482-badge.png";
+
+  let swiperInstance = null;
+  let currentReelsData = [];
+  let currentUserId = null;
+  let currentReelIdForComments = null;
+  const BLACK_POSTER = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9" viewBox="0 0 16 9"><rect width="16" height="9" fill="black"/></svg>');
+
+  document.addEventListener('DOMContentLoaded', loadReels);
+
+  async function loadReels() {
+    try {
+      const res = await fetch('/api/reels/feed', { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+      const data = await res.json();
+      currentUserId = data.currentUserId || null;
+      
+      if(data.ok && data.reels && data.reels.length > 0) {
+        currentReelsData = data.reels;
+        renderReels(data.reels);
+        
+        // --- التعديل الجديد: قراءة الـ id من الرابط ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetReelId = urlParams.get('id');
+        let initialIndex = 0;
+
+        if (targetReelId) {
+            // البحث عن ترتيب الريل المطلوب
+            const index = data.reels.findIndex(r => r.reelId === targetReelId);
+            if (index !== -1) {
+                initialIndex = index;
+            }
+        }
+        
+        // تمرير الفهرس (Index) للدالة
+        initSwiper(initialIndex);
+      } else {
+        document.getElementById('reelsWrapper').innerHTML = '<div class="swiper-slide text-gray-500">لا توجد ريلز حالياً</div>';
+      }
+    } catch(e) {
+      console.error(e);
+      document.getElementById('reelsWrapper').innerHTML = `<div class="swiper-slide text-red-500">خطأ في التحميل</div>`;
+    }
+  }
+
+  function renderReels(reels) {
+    const wrapper = document.getElementById('reelsWrapper');
+    wrapper.innerHTML = reels.map((reel, index) => {
+      const isOwner = reel.userId === currentUserId;
+      const poster = reel.thumbnailUrl || BLACK_POSTER;
+      return `
+      <div class="swiper-slide" data-index="${index}" data-id="${reel.reelId}">
+        <video src="${reel.videoUrl}" poster="${poster}" class="w-full h-full object-cover" playsinline preload="metadata" webkit-playsinline></video>
+        <i class="fas fa-heart big-heart" id="bigHeart-${reel.reelId}"></i>
+        <div class="play-btn" id="playBtn-${reel.reelId}"><i class="fas fa-play"></i></div>
+        <div class="video-progress" id="progress-${reel.reelId}">
+          <div class="progress" id="progressBar-${reel.reelId}"></div>
+          <div class="thumb" id="thumb-${reel.reelId}"></div>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/90 pointer-events-none"></div>
+
+        <div class="absolute left-4 bottom-24 flex flex-col items-center gap-6 z-20 pointer-events-auto">
+          <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="handleLike('${reel.reelId}')">
+            <i class="${reel.is_liked ? 'fas text-red-500' : 'far text-white'} fa-heart text-3xl drop-shadow-md" id="likeIcon-${reel.reelId}"></i>
+            <span class="text-xs font-bold" id="likeCount-${reel.reelId}">${reel.likes}</span>
+          </div>
+          <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="openComments('${reel.reelId}')">
+            <i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i>
+            <span class="text-xs font-bold" id="commentCount-${reel.reelId}">${reel.commentsCount}</span>
+          </div>
+          <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="shareReel('${reel.reelId}')">
+            <i class="fas fa-share text-3xl text-white drop-shadow-md"></i>
+            <span class="text-xs font-bold">مشاركة</span>
+          </div>
+          ${isOwner ? `<div class="flex flex-col items-center gap-1 cursor-pointer text-red-500" onclick="deleteReel('${reel.reelId}')"><i class="fas fa-trash-can text-2xl drop-shadow-md"></i><span class="text-[10px] font-bold">حذف</span></div>` : ''}
+        </div>
+
+        <div class="absolute right-4 bottom-8 left-16 z-20 text-right">
+          <a href="/profile?userId=${encodeURIComponent(reel.userId)}" class="flex items-center gap-3 mb-2 pointer-events-auto cursor-pointer" style="text-decoration:none;color:inherit;">
+            <img src="${escapeHtml(reel.user.profile_picture_url || 'https://via.placeholder.com/40')}" class="w-10 h-10 rounded-full border border-white object-cover">
+            <h3 class="font-bold text-white shadow-black drop-shadow-md text-base">@${escapeHtml(reel.user.username)} <span class="verified-placeholder" data-user-id="${escapeAttr(reel.userId)}"></span></h3>
+          </a>
+          <p class="text-sm text-gray-200 line-clamp-2 leading-relaxed drop-shadow-md dir-rtl pr-1">${escapeHtml(reel.description)}</p>
+        </div>
+      </div>
+    `}).join('');
+
+    setupVideoInteractions();
+    updateVerifiedBadges();
+  }
+
+  function setupVideoInteractions() {
+    document.querySelectorAll('video').forEach(vid => {
+      const slide = vid.closest('.swiper-slide');
+      const reelId = slide.getAttribute('data-id');
+      const progressBar = document.getElementById(`progressBar-${reelId}`);
+      const progressContainer = document.getElementById(`progress-${reelId}`);
+      const playBtn = document.getElementById(`playBtn-${reelId}`);
+      const thumb = document.getElementById(`thumb-${reelId}`);
+
+      vid.addEventListener('timeupdate', () => {
+        if (!progressBar || !vid.duration || isNaN(vid.duration)) return;
+        const pct = (vid.currentTime / vid.duration) * 100;
+        progressBar.style.width = pct + '%';
+        if (thumb) thumb.style.left = (100 - pct) + '%';
+      });
+
+      if (progressContainer) {
+        progressContainer.addEventListener('click', (ev) => {
+          const rect = progressContainer.getBoundingClientRect();
+          const x = ev.clientX - rect.left;
+          let pct = 1 - (x / rect.width);
+          if (pct < 0) pct = 0; if (pct > 1) pct = 1;
+          if (vid.duration && !isNaN(vid.duration)) {
+            vid.currentTime = pct * vid.duration;
+            vid.play().catch(() => {});
+          }
+        });
+      }
+
+      if (playBtn) {
+        playBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          togglePlayPause(vid, reelId, true);
+        });
+      }
+
+      let lastTap = 0;
+      vid.addEventListener('click', (e) => {
+        const now = Date.now();
+        const delta = now - lastTap;
+        if (delta < 300 && delta > 0) {
+          const id = vid.closest('.swiper-slide').getAttribute('data-id');
+          handleLike(id, true);
+          animateHeart(id);
+        } else {
+          const id = vid.closest('.swiper-slide').getAttribute('data-id');
+          togglePlayPause(vid, id, true);
+        }
+        lastTap = now;
+      });
+
+      vid.addEventListener('pause', () => { showPlayBtnTemporarily(reelId, true); });
+      vid.addEventListener('play', () => { showPlayBtnTemporarily(reelId, false); });
+      vid.addEventListener('ended', () => { showPlayBtnTemporarily(reelId, true); });
+    });
+  }
+
+  // --- التعديل الجديد: قبول initialIndex ---
+  function initSwiper(initialIndex = 0) {
+    if(swiperInstance) swiperInstance.destroy(true, true);
+    
+    swiperInstance = new Swiper(".mySwiper", {
+      direction: "vertical",
+      mousewheel: true,
+      keyboard: { enabled: true },
+      speed: 400,
+      initialSlide: initialIndex, // ضبط الشريحة الابتدائية
+      on: {
+        init: function() { 
+            playCurrentVideo(this); 
+        },
+        slideChange: function () {
+          pauseAllVideos();
+          playCurrentVideo(this);
+        }
+      }
+    });
+  }
+
+  function pauseAllVideos() {
+    document.querySelectorAll('video').forEach(v => { try { v.pause(); } catch(e) {} });
+  }
+
+  function playCurrentVideo(swiper) {
+    const activeSlide = swiper.slides[swiper.activeIndex];
+    const video = activeSlide.querySelector('video');
+    if (video) {
+      video.muted = false;
+      video.play().catch(() => { video.muted = true; video.play().catch(()=>{}); });
+      const reelId = activeSlide.getAttribute('data-id');
+      showPlayBtnTemporarily(reelId, false);
+    }
+  }
+
+  function togglePlayPause(videoEl, reelId, showButton) {
+    const playBtn = document.getElementById(`playBtn-${reelId}`);
+    try {
+      if (videoEl.paused) {
+        videoEl.play().catch(()=>{});
+        if (playBtn) { playBtn.classList.remove('show'); playBtn.querySelector('i').className = 'fas fa-pause'; }
+      } else {
+        videoEl.pause();
+        if (playBtn) { playBtn.querySelector('i').className = 'fas fa-play'; showPlayBtnTemporarily(reelId, true); }
+      }
+      if (showButton && playBtn) {
+        playBtn.classList.add('show');
+        setTimeout(() => { playBtn.classList.remove('show'); }, 1400);
+      }
+    } catch(e) {}
+  }
+
+  function showPlayBtnTemporarily(reelId, isPaused) {
+    const playBtn = document.getElementById(`playBtn-${reelId}`);
+    if (!playBtn) return;
+    const icon = playBtn.querySelector('i');
+    if (isPaused) { icon.className = 'fas fa-play'; playBtn.classList.add('show'); }
+    else { icon.className = 'fas fa-pause'; playBtn.classList.remove('show'); }
+    if (isPaused) setTimeout(() => { playBtn.classList.remove('show'); }, 1400);
+  }
+
+  function animateHeart(reelId) {
+    const heart = document.getElementById(`bigHeart-${reelId}`);
+    if(!heart) return;
+    heart.classList.remove('animate');
+    void heart.offsetWidth;
+    heart.classList.add('animate');
+    const icon = document.getElementById(`likeIcon-${reelId}`);
+    if(icon && !icon.classList.contains('text-red-500')) {
+      icon.classList.remove('far');
+      icon.classList.add('fas', 'text-red-500');
+      const countEl = document.getElementById(`likeCount-${reelId}`);
+      if(countEl) countEl.textContent = parseInt(countEl.textContent || '0') + 1;
+    }
+  }
+
+  window.deleteReel = async function(reelId) {
+    if(!confirm('هل تريد حذف هذا الريل نهائياً؟')) return;
+    try {
+      const res = await fetch(`/api/reels/${reelId}`, { method: 'DELETE', credentials: 'include' });
+      const data = await res.json().catch(()=>({ ok: false }));
+      if(res.ok && data.ok) location.reload();
+      else { console.error('Delete reel failed', res.status, data); alert(data.error || 'خطأ في الحذف'); }
+    } catch(e) { console.error('Delete reel error', e); alert('فشل الاتصال بالسيرفر'); }
+  };
+
+  async function handleLike(reelId, forceLike = false) {
+    const icon = document.getElementById(`likeIcon-${reelId}`);
+    const countSpan = document.getElementById(`likeCount-${reelId}`);
+    const isLiked = icon.classList.contains('text-red-500');
+    if (forceLike && isLiked) return;
+
+    if (isLiked) {
+      icon.className = 'far fa-heart text-3xl text-white drop-shadow-md';
+      countSpan.textContent = Math.max(0, parseInt(countSpan.textContent) - 1);
+    } else {
+      icon.className = 'fas fa-heart text-3xl text-red-500 drop-shadow-md';
+      countSpan.textContent = parseInt(countSpan.textContent) + 1;
+    }
+    try { await fetch(`/api/reels/${reelId}/like`, { method: 'POST', credentials: 'include' }); } catch(e) { console.error('like error', e); }
+  }
+
+  // Comments sheet
+  const backdrop = document.getElementById('backdrop');
+  const sheet = document.getElementById('commentsSheet');
+  const commentsList = document.getElementById('commentsList');
+
+  window.openComments = async function(reelId) {
+    currentReelIdForComments = reelId;
+    backdrop.classList.add('open');
+    sheet.classList.add('open');
+    if(swiperInstance) swiperInstance.allowTouchMove = false;
+
+    commentsList.innerHTML = '<div class="text-center mt-5"><i class="fas fa-circle-notch fa-spin text-blue-500"></i></div>';
+    try {
+      await fetchAndRenderReelComments(reelId);
+    } catch(e) {
+      console.error('openComments error', e);
+      commentsList.innerHTML = '<div class="text-center text-red-500 mt-4">فشل في جلب التعليقات.</div>';
+    }
+  };
+
+  function closeCommentsSheet() {
+    backdrop.classList.remove('open');
+    sheet.classList.remove('open');
+    if(swiperInstance) swiperInstance.allowTouchMove = true;
+    currentReelIdForComments = null;
+    commentsList.innerHTML = '';
+    document.getElementById('commentInput').value = '';
+  }
+
+  async function fetchAndRenderReelComments(reelId) {
+    commentsList.innerHTML = '<div class="text-center mt-5"><i class="fas fa-circle-notch fa-spin text-blue-500"></i></div>';
+    try {
+      const res = await fetch(`/api/reels/${reelId}/comments`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch comments: ' + res.status);
+      const data = await res.json();
+      if (!data.ok) throw new Error('Invalid response');
+
+      renderComments(data.comments || []);
+      const countEl = document.getElementById(`commentCount-${reelId}`);
+      if (countEl) countEl.textContent = (data.comments || []).length;
+    } catch (e) {
+      console.error(e);
+      commentsList.innerHTML = '<div class="text-center text-red-500 mt-4">فشل في جلب التعليقات.</div>';
+    }
+  }
+
+  function renderComments(comments) {
+    commentsList.innerHTML = '';
+    if(!comments || comments.length === 0) {
+      commentsList.innerHTML = '<div class="text-center text-gray-500 text-sm mt-10">كن أول من يعلق!</div>';
+      return;
+    }
+
+    commentsList.innerHTML = comments.map(c => `
+      <div class="comment-item" data-comment-id="${escapeAttr(c.id)}">
+        <img src="${escapeHtml(c.profile_picture_url || 'https://via.placeholder.com/40')}" alt="${escapeHtml(c.username)}">
+        <div class="comment-body">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-bold text-sm">${escapeHtml(c.username)} <span class="verified-placeholder" data-user-id="${escapeAttr(c.userId || c.userID || c.userId || '')}"></span></div>
+              <div class="text-[11px] text-gray-400">${new Date(c.timestamp).toLocaleTimeString()}</div>
+            </div>
+          </div>
+          <div class="mt-2 text-sm text-gray-200">${escapeHtml(c.content)}</div>
+          <div class="comment-actions">
+            <button class="flex items-center gap-2 text-gray-300" onclick="toggleReelCommentLike('${escapeAttr(currentReelIdForComments)}','${escapeAttr(c.id)}', this)">
+              <i class="${c.is_liked ? 'fas fa-heart text-red-400' : 'far fa-heart'}"></i>
+              <span id="reel-comment-like-count-${escapeAttr(c.id)}" class="text-xs">${c.likes || 0}</span>
+            </button>
+
+            <button class="flex items-center gap-2 text-gray-300" onclick="toggleReplyBox('${escapeAttr(c.id)}')">
+              <i class="fas fa-reply"></i>
+              <span class="text-xs">رد</span>
+            </button>
+
+            <button class="flex items-center gap-2 text-gray-300 ${ (c.repliesCount||0) > (c.recentReplies ? c.recentReplies.length : 0) ? '' : 'hidden' }" onclick="fetchAndShowAllRepliesReel('${escapeAttr(currentReelIdForComments)}','${escapeAttr(c.id)}', this)">
+              <i class="fas fa-angle-down"></i>
+              <span class="text-xs">عرض الردود (${c.repliesCount || 0})</span>
+            </button>
+          </div>
+
+          <div id="replies-container-${escapeAttr(c.id)}" class="mt-3">
+            ${(c.recentReplies && c.recentReplies.length > 0) ? c.recentReplies.map(r => `
+              <div class="reply-item flex items-start gap-2">
+                <img src="${escapeHtml(r.profile_picture_url || 'https://via.placeholder.com/40')}" class="small-avatar" alt="${escapeHtml(r.username)}">
+                <div>
+                  <div class="text-xs text-gray-300 font-bold">${escapeHtml(r.username)}</div>
+                  <div class="text-sm text-gray-200">${escapeHtml(r.content)}</div>
+                </div>
+              </div>
+            `).join('') : ''}
+          </div>
+
+          <div id="reply-box-${escapeAttr(c.id)}" class="mt-2 hidden">
+            <div class="flex items-center gap-2">
+              <input id="reply-input-${escapeAttr(c.id)}" class="flex-1 bg-[#222] text-white text-sm rounded-full px-3 py-2 outline-none" placeholder="أضف رد..." />
+              <button class="px-3 py-1 bg-blue-600 rounded-md" onclick="postReelReply('${escapeAttr(currentReelIdForComments)}','${escapeAttr(c.id)}')"><i class="fas fa-paper-plane"></i></button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `).join('');
+
+    updateVerifiedBadges();
+  }
+
+  async function toggleReelCommentLike(reelId, commentId, btnEl) {
+    if (!reelId || !commentId) return;
+    btnEl.disabled = true;
+    try {
+      const res = await fetch(`/api/reels/${reelId}/comments/${commentId}/like`, { method: 'POST', credentials: 'include' });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        const countEl = document.getElementById(`reel-comment-like-count-${commentId}`);
+        if (countEl) countEl.textContent = data.likes;
+        const icon = btnEl.querySelector('i');
+        if (data.is_liked) {
+          icon.classList.remove('far'); icon.classList.add('fas', 'text-red-400');
+          btnEl.classList.add('text-red-400');
+        } else {
+          icon.classList.remove('fas', 'text-red-400'); icon.classList.add('far');
+          btnEl.classList.remove('text-red-400');
+        }
+      } else {
+        console.warn('Failed to like comment', data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      btnEl.disabled = false;
+    }
+  }
+
+  function toggleReplyBox(commentId) {
+    const box = document.getElementById(`reply-box-${commentId}`);
+    if (!box) return;
+    box.classList.toggle('hidden');
+    const input = document.getElementById(`reply-input-${commentId}`);
+    if (input && !box.classList.contains('hidden')) input.focus();
+  }
+
+  async function postReelReply(reelId, commentId) {
+    const input = document.getElementById(`reply-input-${commentId}`);
+    if (!input) return;
+    const content = input.value.trim();
+    if (!content) return;
+    input.disabled = true;
+    try {
+      const res = await fetch(`/api/reels/${reelId}/comments/${commentId}/reply`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        await fetchAndRenderReelComments(reelId);
+      } else {
+        alert(data.error || 'فشل في إرسال الرد');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('فشل في الاتصال');
+    } finally {
+      input.disabled = false;
+    }
+  }
+
+  async function fetchAndShowAllRepliesReel(reelId, commentId, triggerBtn) {
+    if (!reelId || !commentId) return;
+    triggerBtn.disabled = true;
+    try {
+      const res = await fetch(`/api/reels/${reelId}/comments/${commentId}/replies`, { credentials: 'include' });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        const container = document.getElementById(`replies-container-${commentId}`);
+        if (container) {
+          container.innerHTML = data.replies.map(r => `
+            <div class="reply-item flex items-start gap-2">
+              <img src="${escapeHtml(r.profile_picture_url || 'https://via.placeholder.com/40')}" class="small-avatar" alt="${escapeHtml(r.username)}">
+              <div>
+                <div class="text-xs text-gray-300 font-bold">${escapeHtml(r.username)}</div>
+                <div class="text-sm text-gray-200">${escapeHtml(r.content)}</div>
+              </div>
+            </div>
+          `).join('');
+        }
+      } else {
+        console.warn('Failed to fetch replies', data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      triggerBtn.disabled = false;
+    }
+  }
+
+  backdrop.addEventListener('click', closeCommentsSheet);
+  document.getElementById('closeComments').addEventListener('click', closeCommentsSheet);
+  
+  document.getElementById('sendCommentBtn').addEventListener('click', async () => {
+    const input = document.getElementById('commentInput');
+    const content = input.value.trim();
+    if(!content || !currentReelIdForComments) return;
+    input.value = '';
+    try {
+      const res = await fetch(`/api/reels/${currentReelIdForComments}/comment`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+      if (!res.ok) throw new Error('Failed to post comment: ' + res.status);
+      await fetchAndRenderReelComments(currentReelIdForComments);
+    } catch(e) { console.error('send comment error', e); alert('فشل الإرسال'); }
+  });
+
+  window.shareReel = function(reelId) {
+    const shareUrl = window.location.origin + '/reels?id=' + reelId;
+    if (navigator.share) {
+      navigator.share({ title: 'شاهد هذا الريل', url: shareUrl });
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      alert('تم نسخ الرابط!');
+    }
+  };
+
+  async function updateVerifiedBadges() {
+    const placeholders = Array.from(document.querySelectorAll('.verified-placeholder'));
+    if (placeholders.length === 0) return;
+    const byId = {};
+    placeholders.forEach(ph => {
+      const uid = ph.dataset.userId;
+      if (uid) byId[uid] = true;
+    });
+    const ids = Object.keys(byId).filter(id => id);
+    await Promise.all(ids.map(async uid => {
+      try {
+        const r = await fetch(`/api/profile?userId=${encodeURIComponent(uid)}`, { credentials: 'include' });
+        if (!r.ok) return; 
+        const data = await r.json();
+        if (data && data.is_verified) {
+          document.querySelectorAll(`.verified-placeholder[data-user-id="${uid}"]`).forEach(ph => {
+            const img = document.createElement('img');
+            img.src = VERIFIED_IMG_URL;
+            img.alt = 'موثق';
+            img.title = 'موثق';
+            img.className = 'verified-badge-img';
+            ph.replaceWith(img);
+          });
+        } else {
+          document.querySelectorAll(`.verified-placeholder[data-user-id="${uid}"]`).forEach(ph => ph.remove());
+        }
+      } catch (e) {
+        document.querySelectorAll(`.verified-placeholder[data-user-id="${uid}"]`).forEach(ph => ph.remove());
+      }
+    }));
+  }
+
+  function escapeHtml(s) {
+    if (!s && s !== 0) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function escapeAttr(s) {
+    if (!s && s !== 0) return '';
+    return String(s).replace(/"/g, '&quot;');
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') updateVerifiedBadges();
+  });
+</script>
+</body>
+</html>

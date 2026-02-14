@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بحث Aite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #000000; color: #e4e6eb; font-family: 'Segoe UI', sans-serif; min-height: 100vh; overflow-x: hidden; }
+        
+        /* Glass Header */
+        .glass-navbar {
+            background-color: rgba(30, 30, 30, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Search Input */
+        .search-input-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s;
+        }
+        .search-input-container:focus-within {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #3b82f6;
+        }
+        .search-input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 100%;
+            outline: none;
+            margin-right: 8px;
+        }
+
+        /* Cards & Media (Reused from Chat List) */
+        .glass-post-card {
+            background-color: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        
+        /* User Row */
+        .user-result-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 8px;
+            border: 1px solid rgba(255,255,255,0.05); cursor: pointer;
+        }
+        .user-result-row:active { background: rgba(255,255,255,0.06); }
+
+        /* Reels Grid */
+        .reels-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 20px; }
+        .reel-item { aspect-ratio: 9/16; background: #222; position: relative; border-radius: 4px; overflow: hidden; cursor: pointer; }
+        .reel-item video { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Audio Player Styles */
+        .audio-play-wrapper { background: #000; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 8px; display: flex; align-items: center; gap: 10px; }
+        .audio-play-button { width: 36px; height: 36px; border-radius: 50%; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .waveform-post { height: 40px; flex-grow: 1; }
+
+        /* Verified Badge */
+        .verified-badge-img { width: 14px; height: 14px; margin-right: 4px; vertical-align: middle; }
+    </style>
+</head>
+<body>
+
+    <header class="sticky top-0 z-50 glass-navbar p-3">
+        <div class="max-w-2xl mx-auto flex items-center gap-3">
+            <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white transition">
+                <i class="fas fa-arrow-right text-lg"></i>
+            </button>
+            <div class="flex-grow search-input-container">
+                <i class="fas fa-search text-gray-400"></i>
+                <input type="text" id="searchInput" class="search-input" placeholder="ابحث عن أشخاص، منشورات، ريلز..." autocomplete="off">
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto p-4 pb-20">
+        
+        <div id="loadingIndicator" class="hidden text-center py-8 text-blue-400">
+            <i class="fas fa-spinner fa-spin text-2xl"></i>
+        </div>
+
+        <div id="resultsContainer">
+            <div id="peopleSection" class="hidden mb-6">
+                <h3 class="text-white font-bold mb-3 px-1 text-lg">الأشخاص</h3>
+                <div id="peopleList"></div>
+            </div>
+
+            <div id="reelsSection" class="hidden mb-6">
+                <h3 class="text-white font-bold mb-3 px-1 text-lg">ريلز</h3>
+                <div id="reelsGrid" class="reels-grid"></div>
+            </div>
+
+            <div id="postsSection" class="hidden">
+                <h3 class="text-white font-bold mb-3 px-1 text-lg">المنشورات</h3>
+                <div id="postsList" class="space-y-4"></div>
+            </div>
+            
+            <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-gray-500">
+                <i class="fas fa-search text-5xl mb-4 opacity-50"></i>
+                <p>اكتب شيئاً للبحث...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const emptyState = document.getElementById('emptyState');
+        const VERIFIED_IMG_URL = "https://res.cloudinary.com/duixjs8az/image/upload/v1768036959/post_media/1768036959482-badge.png";
+        
+        let debounceTimer;
+        let activeWaveSurfer = null; // Single active audio
+
+        searchInput.focus();
+        emptyState.classList.remove('hidden');
+
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            const query = e.target.value.trim();
+            
+            if (!query) {
+                clearResults();
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            loadingIndicator.classList.remove('hidden');
+            
+            debounceTimer = setTimeout(() => {
+                performSearch(query);
+            }, 600);
+        });
+
+        function clearResults() {
+            document.getElementById('peopleList').innerHTML = '';
+            document.getElementById('peopleSection').classList.add('hidden');
+            document.getElementById('reelsGrid').innerHTML = '';
+            document.getElementById('reelsSection').classList.add('hidden');
+            document.getElementById('postsList').innerHTML = '';
+            document.getElementById('postsSection').classList.add('hidden');
+        }
+
+        async function performSearch(query) {
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                
+                loadingIndicator.classList.add('hidden');
+                clearResults();
+
+                if (data.ok) {
+                    // Render People
+                    if (data.people && data.people.length > 0) {
+                        document.getElementById('peopleSection').classList.remove('hidden');
+                        document.getElementById('peopleList').innerHTML = data.people.map(u => `
+                            <div class="user-result-row" onclick="window.location.href='/profile?userId=${u.id}'">
+                                <div class="flex items-center gap-3">
+                                    <img src="${u.profile_picture_url || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full object-cover">
+                                    <div>
+                                        <div class="font-bold text-sm text-white">${u.username}</div>
+                                        <div class="text-xs text-gray-400">${u.full_name || ''}</div>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-left text-gray-500 text-xs"></i>
+                            </div>
+                        `).join('');
+                    }
+
+                    // Render Reels
+                    if (data.reels && data.reels.length > 0) {
+                        document.getElementById('reelsSection').classList.remove('hidden');
+                        document.getElementById('reelsGrid').innerHTML = data.reels.map(r => `
+                            <div class="reel-item" onclick="window.location.href='/reels?id=${r.reelId}'">
+                                <video src="${r.videoUrl}" muted></video>
+                                <div class="absolute bottom-1 right-1">
+                                    <i class="fas fa-play text-white text-xs drop-shadow-md"></i>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+
+                    // Render Posts
+                    if (data.posts && data.posts.length > 0) {
+                        document.getElementById('postsSection').classList.remove('hidden');
+                        const postsContainer = document.getElementById('postsList');
+                        
+                        data.posts.forEach(post => {
+                            // Check verification (simple mock if missing)
+                            post.user.is_verified = post.user.is_verified || false;
+                            postsContainer.innerHTML += createPostCardHtml(post);
+                        });
+
+                        // Initialize WaveSurfers for audio posts
+                        data.posts.forEach(post => {
+                            if (post.media && post.media.type === 'audio') {
+                                initWaveSurfer(post.postId, post.media.url);
+                            }
+                        });
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // --- Helpers reused from Chat List ---
+
+        function createPostCardHtml(post) {
+            // Note: In search we link to the post page
+            let mediaContent = '';
+            if (post.media) {
+                if (post.media.type === 'image') {
+                    mediaContent = `<img src="${post.media.url}" class="w-full rounded-lg mt-3 max-h-80 object-cover border border-gray-800">`;
+                } else if (post.media.type === 'video') {
+                    mediaContent = `<div class="mt-3 relative aspect-video bg-black rounded-lg flex items-center justify-center border border-gray-800">
+                        <i class="fas fa-play-circle text-4xl text-white opacity-80"></i>
+                        <video src="${post.media.url}" class="absolute inset-0 w-full h-full object-contain opacity-60"></video>
+                    </div>`; // Simplified for search view
+                } else if (post.media.type === 'audio') {
+                    mediaContent = `
+                        <div class="mt-3 audio-play-wrapper">
+                            <button id="btn-${post.postId}" class="audio-play-button" onclick="toggleAudio('${post.postId}', event)">
+                                <i class="fas fa-play text-sm"></i>
+                            </button>
+                            <div id="wave-${post.postId}" class="waveform-post"></div>
+                        </div>`;
+                }
+            }
+
+            const verifiedBadge = post.user.is_verified ? `<img src="${VERIFIED_IMG_URL}" class="verified-badge-img">` : '';
+
+            return `
+                <div class="glass-post-card p-4 cursor-pointer hover:bg-white/5 transition" onclick="window.location.href='/post.html?id=${post.postId}'">
+                    <div class="flex items-center mb-2">
+                        <img src="${post.user.profile_picture_url}" class="w-10 h-10 rounded-full border border-gray-700 object-cover ml-3">
+                        <div>
+                            <div class="text-white font-bold text-sm">${post.user.username} ${verifiedBadge}</div>
+                            <div class="text-gray-500 text-xs">${new Date(post.timestamp).toLocaleDateString('ar-EG')}</div>
+                        </div>
+                    </div>
+                    <div class="text-gray-200 text-sm whitespace-pre-wrap leading-relaxed">${post.content}</div>
+                    ${mediaContent}
+                </div>
+            `;
+        }
+
+        function initWaveSurfer(id, url) {
+            setTimeout(() => {
+                const container = document.getElementById(`wave-${id}`);
+                if(!container) return;
+                const ws = WaveSurfer.create({
+                    container: container,
+                    waveColor: '#555',
+                    progressColor: '#fff',
+                    height: 40,
+                    barWidth: 2,
+                    barGap: 1,
+                    cursorWidth: 0,
+                    interact: false // Disable interaction in search preview
+                });
+                ws.load(url);
+                container.wsInstance = ws;
+            }, 50);
+        }
+
+        function toggleAudio(id, e) {
+            e.stopPropagation(); // Prevent navigating to post
+            const container = document.getElementById(`wave-${id}`);
+            const btnIcon = document.querySelector(`#btn-${id} i`);
+            if(!container || !container.wsInstance) return;
+
+            const ws = container.wsInstance;
+
+            if (activeWaveSurfer && activeWaveSurfer !== ws) {
+                activeWaveSurfer.pause();
+                // Reset icon for previous (simplified)
+            }
+
+            if(ws.isPlaying()) {
+                ws.pause();
+                btnIcon.classList.remove('fa-pause');
+                btnIcon.classList.add('fa-play');
+            } else {
+                ws.play();
+                btnIcon.classList.remove('fa-play');
+                btnIcon.classList.add('fa-pause');
+                activeWaveSurfer = ws;
+            }
+        }
+
+    </script>
+</body>
+</html>

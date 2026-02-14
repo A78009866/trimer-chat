@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عرض المنشور</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000000;
+            color: #e4e6eb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding-bottom: 20px; 
+            overflow-x: hidden;
+        }
+
+        .glass-navbar {
+            background-color: rgba(30, 30, 30, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-post-card {
+            background-color: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+
+        /* --- Video large display --- */
+        .video-large {
+            width: 100%;
+            height: 480px;
+            max-height: 72vh;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+            display: block;
+        }
+        .video-large video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            background: #000;
+            cursor: pointer;
+        }
+        .video-play-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15));
+            transition: opacity 0.18s;
+            z-index: 30;
+        }
+        .video-play-overlay i {
+            font-size: 54px;
+            color: rgba(255,255,255,0.94);
+            text-shadow: 0 6px 24px rgba(0,0,0,0.6);
+        }
+        .video-play-overlay.hidden { opacity: 0; pointer-events: none; }
+        .video-fs-btn {
+            position: absolute; top: 10px; left: 10px;
+            width: 36px; height: 36px; border-radius: 8px;
+            background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; z-index: 40; cursor: pointer;
+        }
+
+        /* --- Audio Player --- */
+        .waveform-post { height: 60px; background: #000000; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04); overflow: hidden; }
+        .audio-play-wrapper { background: #000000; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); padding: 10px; display: flex; align-items: center; gap: 12px; }
+        .audio-play-button { background: #ffffff; color: #000000; width: 44px; height: 44px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: transform .12s ease; }
+        .audio-play-button:hover { transform: translateY(-2px); }
+        .audio-play-button i { color: #000000 !important; }
+
+        /* --- Comments Modal (Bottom Sheet) --- */
+        .glass-comment-modal-content {
+            background-color: #18191a;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.6);
+            display: flex; flex-direction: column;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: 75vh; border-radius: 20px 20px 0 0;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 60;
+        }
+        .glass-comment-modal-content.open { transform: translateY(0); }
+        .glass-modal-bg { background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); transition: opacity 0.3s; }
+        .modal-handle { width: 40px; height: 4px; background-color: rgba(255,255,255,0.3); border-radius: 2px; margin: 12px auto 8px auto; }
+        
+        /* --- Verified & Badges --- */
+        .verified-badge-img { width: 14px; height: 14px; margin-right: 4px; margin-left: 2px; vertical-align: middle; display: inline-block; }
+        .avatar-with-dot { position: relative; display: inline-flex; }
+        .online-dot { position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; background: #22c55e; border: 2px solid #000; border-radius: 999px; }
+        
+        /* --- Bottom Sheet Options --- */
+        #postOptionsModal .sheet { background: #0b0b0c; border-radius: 14px 14px 0 0; padding: 12px; border: 1px solid rgba(255,255,255,0.06); }
+        .option-btn { display:flex; align-items:center; justify-content:center; gap:10px; padding:12px; border-radius:10px; width:100%; background: rgba(255,255,255,0.02); color:#e6eefb; border:1px solid rgba(255,255,255,0.03); cursor:pointer; }
+        .option-btn.danger { background: linear-gradient(90deg,#7f1d1d, #ef4444); color:white; border:none; }
+        .option-row { display:flex; gap:10px; margin-bottom:10px; }
+
+        /* Toast */
+        .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 90px; background: rgba(0,0,0,0.8); color: #fff; padding: 8px 14px; border-radius: 10px; z-index: 2000; opacity: 0; transition: opacity .18s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+        
+        /* Media Viewer */
+        .media-container { max-height: 80vh; width: auto; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <header class="sticky top-0 z-50 glass-navbar p-3 flex items-center gap-4">
+        <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white transition">
+            <i class="fas fa-arrow-right text-xl"></i>
+        </button>
+        <h1 class="text-xl font-bold text-white">المنشور</h1>
+    </header>
+
+    <main id="postContainer" class="max-w-xl mx-auto p-4 mt-2">
+        <div class="text-center py-20 text-gray-500">
+            <i class="fas fa-spinner fa-spin text-3xl mb-4"></i>
+            <p>جاري تحميل المنشور...</p>
+        </div>
+    </main>
+
+    <div id="postOptionsModal" class="hidden fixed inset-0 z-[80] flex items-end justify-center glass-modal-bg" onclick="closePostOptionsModal()">
+      <div class="sheet w-full md:max-w-md" onclick="event.stopPropagation()">
+        <div class="modal-handle" style="margin-bottom:8px;"></div>
+        <div class="p-3">
+          <div id="postOptionsMessage" class="text-sm text-gray-300 mb-2 hidden"></div>
+          <div class="option-row">
+            <button id="postOptionsDeleteBtn" class="option-btn danger" onclick="confirmDeleteFromOptions(event)">
+              <i class="fas fa-trash"></i>
+              <span>حذف المنشور</span>
+            </button>
+          </div>
+          <div class="option-row">
+            <button id="postOptionsCloseBtn" class="option-btn" onclick="closePostOptionsModal()">
+              <i class="fas fa-times"></i>
+              <span>إلغاء</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="deleteModal" class="hidden fixed inset-0 z-[90] flex items-center justify-center p-4 glass-modal-bg">
+        <div class="bg-[#1f2937] p-6 rounded-xl shadow-2xl max-w-sm w-full border border-gray-700 text-center" onclick="event.stopPropagation()">
+            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+            <h3 class="text-xl font-bold text-white mb-2">تأكيد الحذف</h3>
+            <p class="text-gray-400 mb-6">هل أنت متأكد أنك تريد حذف هذا المنشور؟</p>
+            <div class="flex justify-around space-x-4 space-x-reverse">
+                <button id="cancelDeleteBtn" class="p-2 w-full bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition duration-300">إلغاء</button>
+                <button id="confirmDeleteBtn" class="p-2 w-full bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition duration-300">حذف</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mediaViewerModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-2 glass-modal-bg" onclick="closeMediaViewer(event)">
+        <button class="absolute top-4 left-4 text-white text-3xl z-50 p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition" onclick="closeMediaViewer(event)">
+            <i class="fas fa-times"></i>
+        </button>
+        <div id="mediaViewerContent" class="media-container flex items-center justify-center" onclick="event.stopPropagation()">
+        </div>
+    </div>
+
+    <div id="commentModal" class="hidden fixed inset-0 z-[70] flex items-end md:items-center justify-center glass-modal-bg transition-opacity duration-300">
+        <div id="commentModalContent" class="glass-comment-modal-content w-full md:w-auto" onclick="event.stopPropagation()">
+            
+            <div class="w-full flex justify-center" onclick="closeCommentModal()">
+                <div class="modal-handle"></div>
+            </div>
+
+            <div class="flex justify-between items-center px-4 pb-2 pt-2 border-b border-gray-800">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    التعليقات 
+                    <span id="commentCountBadge" class="text-xs bg-gray-700 px-2 py-0.5 rounded-full text-gray-300">0</span>
+                </h3>
+                <button class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:text-white" onclick="closeCommentModal()">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+            
+            <div id="commentsList" class="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#18191a] min-h-0">
+            </div>
+
+            <div class="p-3 border-t border-gray-800 bg-[#18191a]">
+                <div id="commentError" class="text-red-500 text-xs text-center mb-2 hidden"></div>
+                <div class="flex items-center gap-2 bg-[#242526] p-1.5 rounded-3xl border border-gray-700">
+                    <img id="myCurrentAvatar" src="https://via.placeholder.com/40" class="w-8 h-8 rounded-full object-cover border border-gray-600 ml-1">
+                    <input type="text" id="newCommentInput" placeholder="أضف تعليقاً..." 
+                           class="flex-grow bg-transparent text-white text-sm px-2 focus:outline-none" 
+                           dir="rtl" autocomplete="off">
+                    <button id="postCommentBtn" class="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition w-9 h-9 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-arrow-up text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const postId = urlParams.get('id');
+        const postContainer = document.getElementById('postContainer');
+        const VERIFIED_IMG_URL = "https://res.cloudinary.com/duixjs8az/image/upload/v1768036959/post_media/1768036959482-badge.png";
+        const DEFAULT_AVATAR = 'https://res.cloudinary.com/duixjs8az/image/upload/v1766905033/post_media/1766905033352-default_profile.png';
+        
+        let currentUserId = null;
+        let activeWaveSurfer = null;
+        let activeVideo = null;
+        let currentPostIdForComments = null; // For modal
+        let currentOptionsPostId = null; // For delete options
+
+        // Fetch user info first
+        fetch('/api/profile').then(r=>r.json()).then(d=> { 
+            if(d.ok) { 
+                currentUserId = d.id; 
+                document.getElementById('myCurrentAvatar').src = d.profile_picture_url || DEFAULT_AVATAR;
+            }
+        });
+
+        if (postId) {
+            loadPost();
+        } else {
+            postContainer.innerHTML = '<p class="text-center text-red-500 mt-10">رابط غير صالح</p>';
+        }
+
+        async function loadPost() {
+            try {
+                const res = await fetch(`/api/posts/one/${postId}`); 
+                const data = await res.json();
+                
+                if (data.ok && data.post) {
+                    renderPost(data.post);
+                } else {
+                    postContainer.innerHTML = '<p class="text-center text-gray-400 mt-10">المنشور غير موجود أو تم حذفه.</p>';
+                }
+            } catch (e) {
+                console.error(e);
+                postContainer.innerHTML = '<p class="text-center text-red-500 mt-10">خطأ في الاتصال</p>';
+            }
+        }
+
+        function renderPost(post) {
+            let mediaContent = '';
+            
+            if (post.media) {
+                if (post.media.type === 'image') {
+                    mediaContent = `
+                        <div class="mt-3 cursor-pointer" onclick="openMediaViewer('${post.media.url}', 'image', event)">
+                            <img src="${post.media.url}" alt="صورة المنشور" class="w-full max-h-96 object-cover rounded-lg border border-gray-800">
+                        </div>
+                    `;
+                } else if (post.media.type === 'video') {
+                     const poster = post.media.poster || 'https://via.placeholder.com/1200x675?text=Video';
+                     mediaContent = `
+                        <div class="mt-3 relative w-full video-large rounded-lg overflow-hidden bg-black group">
+                            <video id="video-${post.postId}" src="${post.media.url}" 
+                                   class="w-full h-full object-cover" 
+                                   poster="${poster}" 
+                                   preload="metadata"
+                                   onclick="toggleVideoPlay('${post.postId}', event)">
+                            </video>
+                            
+                            <div id="play-overlay-${post.postId}" class="video-play-overlay" onclick="toggleVideoPlay('${post.postId}', event)">
+                                <i class="fas fa-play"></i>
+                            </div>
+
+                            <button class="video-fs-btn" onclick="toggleFullscreen('${post.postId}', event)" title="تكبير">
+                              <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    `;
+                } else if (post.media.type === 'audio') {
+                    mediaContent = `
+                        <div class="mt-3">
+                            <div class="audio-play-wrapper">
+                                <button id="audio-btn-${post.postId}" class="audio-play-button" onclick="toggleAudioPlay('${post.postId}')">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <div id="waveform-${post.postId}" class="waveform-post flex-grow"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            const likeIconClass = post.is_liked ? 'fas fa-heart text-red-500' : 'far fa-heart text-gray-400';
+            const likeButtonClass = post.is_liked ? 'text-red-500' : 'text-gray-400';
+            const verifiedBadgeHtml = post.user.is_verified ? `<img src="${VERIFIED_IMG_URL}" class="verified-badge-img">` : '';
+            const onlineDotHtml = post.user.is_online ? `<span class="online-dot"></span>` : '';
+
+            // Post Menu Button
+            const menuButtonHtml = `
+                <button class="text-gray-400 hover:text-white transition duration-300 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5" 
+                        onclick="openPostOptionsModal('${post.postId}', '${post.userId}')">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            `;
+
+            postContainer.innerHTML = `
+                <div class="glass-post-card p-4 rounded-xl shadow-lg" data-post-id="${post.postId}">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center">
+                            <a href="/profile?userId=${post.userId}" class="avatar-with-dot">
+                                <img src="${post.user.profile_picture_url}" class="w-10 h-10 rounded-full object-cover ml-3 border border-gray-600">
+                                ${onlineDotHtml}
+                            </a>
+                            <div>
+                                 <a href="/profile?userId=${post.userId}" class="text-white font-semibold hover:text-blue-400 flex items-center">
+                                    ${post.user.username} ${verifiedBadgeHtml}
+                                 </a>
+                                <p class="text-gray-400 text-xs">${new Date(post.timestamp).toLocaleString('ar-EG')}</p>
+                            </div>
+                        </div>
+                        ${menuButtonHtml}
+                    </div>
+
+                    <p class="text-gray-200 whitespace-pre-wrap leading-relaxed text-base">${post.content}</p>
+
+                    ${mediaContent}
+
+                    <div class="flex justify-between items-center text-gray-400 text-sm mt-3 pb-2 border-b border-gray-700">
+                        <span id="likesCountDisplay"><i class="fas fa-heart ml-1"></i> ${post.likes} إعجاب</span>
+                        <span class="cursor-pointer hover:text-blue-400" onclick="handleComment('${post.postId}')">
+                            <i class="far fa-comment-dots ml-1"></i> <span id="commentsCountDisplay">${post.commentsCount}</span> تعليق
+                        </span>
+                    </div>
+
+                    <div class="flex justify-around border-t border-gray-700 mt-3 pt-3">
+                        <button class="flex items-center ${likeButtonClass} hover:text-red-500 transition duration-300 w-full justify-center gap-2" 
+                                onclick="handleLike('${post.postId}', this)">
+                            <i class="${likeIconClass} ml-2 like-icon text-lg"></i>
+                            <span class="text-sm font-medium">إعجاب</span>
+                        </button>
+
+                        <button class="flex items-center text-gray-400 hover:text-blue-500 transition duration-300 w-full justify-center gap-2" onclick="handleComment('${post.postId}')">
+                            <i class="fas fa-comment-dots text-lg"></i>
+                            <span class="text-sm font-medium">تعليق</span>
+                        </button>
+
+                        <button class="flex items-center text-gray-400 hover:text-blue-500 transition duration-300 w-full justify-center gap-2" onclick="copyPostLink('${post.postId}', event)">
+                            <i class="fas fa-link text-lg"></i>
+                            <span class="text-sm font-medium">نسخ</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Initialize Audio if present
+            if (post.media && post.media.type === 'audio') {
+                setTimeout(() => {
+                    initializePostWaveSurfer(post.postId, post.media.url);
+                }, 100);
+            }
+        }
+
+        // --- Logic Functions (Copied from Chat List) ---
+
+        // Audio Logic
+        function initializePostWaveSurfer(id, url) {
+            const container = document.getElementById(`waveform-${id}`);
+            if(!container) return;
+            
+            const ws = WaveSurfer.create({
+                container: container,
+                waveColor: '#4A4A4A',
+                progressColor: '#ffffff',
+                cursorColor: 'transparent',
+                barWidth: 3,
+                barRadius: 3,
+                barGap: 1,
+                height: 60,
+                responsive: true,
+                mediaControls: false,
+            });
+            ws.load(url);
+            container.wsInstance = ws;
+
+            ws.on('play', () => {
+                ws.setWaveColor('#6b7280');
+                ws.setProgressColor('#ffffff');
+            });
+            ws.on('pause', () => {
+                ws.setWaveColor('#ffffff'); 
+                ws.setProgressColor('#ffffff');
+                activeWaveSurfer = null;
+                const btn = document.getElementById(`audio-btn-${id}`);
+                if(btn) btn.innerHTML = '<i class="fas fa-play"></i>';
+            });
+            ws.on('finish', () => {
+                 ws.setWaveColor('#ffffff');
+                 ws.setProgressColor('#ffffff');
+                 activeWaveSurfer = null;
+                 const btn = document.getElementById(`audio-btn-${id}`);
+                 if(btn) btn.innerHTML = '<i class="fas fa-play"></i>';
+                 ws.seekTo(0);
+            });
+        }
+
+        function toggleAudioPlay(id) {
+            const container = document.getElementById(`waveform-${id}`);
+            const btn = document.getElementById(`audio-btn-${id}`);
+            if(!container || !container.wsInstance) return;
+            const ws = container.wsInstance;
+
+            // Stop Video if playing
+            if(activeVideo) {
+                activeVideo.pause();
+                const vId = activeVideo.id.split('-')[1];
+                document.getElementById(`play-overlay-${vId}`).classList.remove('hidden');
+                activeVideo = null;
+            }
+
+            // Stop other audio
+            if(activeWaveSurfer && activeWaveSurfer !== ws) {
+                activeWaveSurfer.pause();
+            }
+
+            if(ws.isPlaying()) {
+                ws.pause();
+            } else {
+                ws.play();
+                btn.innerHTML = '<i class="fas fa-pause"></i>';
+                activeWaveSurfer = ws;
+            }
+        }
+
+        // Video Logic
+        function toggleVideoPlay(id, event) {
+            if(event) event.stopPropagation();
+            const video = document.getElementById(`video-${id}`);
+            const overlay = document.getElementById(`play-overlay-${id}`);
+            
+            if(activeWaveSurfer) activeWaveSurfer.pause();
+            if(activeVideo && activeVideo !== video) {
+                activeVideo.pause();
+                const oldId = activeVideo.id.split('-')[1];
+                document.getElementById(`play-overlay-${oldId}`).classList.remove('hidden');
+            }
+
+            if(video.paused) {
+                video.play();
+                overlay.classList.add('hidden');
+                activeVideo = video;
+                video.onended = () => {
+                    overlay.classList.remove('hidden');
+                    activeVideo = null;
+                };
+            } else {
+                video.pause();
+                overlay.classList.remove('hidden');
+                activeVideo = null;
+            }
+        }
+
+        function toggleFullscreen(id, ev) {
+            if(ev) ev.stopPropagation();
+            const video = document.getElementById(`video-${id}`);
+            const container = video.closest('.video-large');
+            if (container.requestFullscreen) container.requestFullscreen();
+            else if (video.requestFullscreen) video.requestFullscreen();
+        }
+
+        // Media Viewer
+        function openMediaViewer(url, type, event) {
+            event.stopPropagation();
+            const modal = document.getElementById('mediaViewerModal');
+            const content = document.getElementById('mediaViewerContent');
+            content.innerHTML = `<img src="${url}" class="max-w-full max-h-full object-contain rounded-lg">`;
+            modal.classList.remove('hidden');
+        }
+        function closeMediaViewer(e) {
+            if(e.target.closest('#mediaViewerContent img')) return;
+            document.getElementById('mediaViewerModal').classList.add('hidden');
+        }
+
+        // Like Post
+        async function handleLike(id, btn) {
+            btn.disabled = true;
+            const res = await fetch(`/api/posts/${id}/like`, { method: 'POST' });
+            const data = await res.json();
+            if (data.ok) {
+                const icon = btn.querySelector('.like-icon');
+                if (data.action === 'liked') {
+                    icon.classList.replace('far', 'fas');
+                    icon.classList.remove('text-gray-400');
+                    icon.classList.add('text-red-500');
+                    btn.classList.add('text-red-500');
+                    btn.classList.remove('text-gray-400');
+                } else {
+                    icon.classList.replace('fas', 'far');
+                    icon.classList.add('text-gray-400');
+                    icon.classList.remove('text-red-500');
+                    btn.classList.remove('text-red-500');
+                    btn.classList.add('text-gray-400');
+                }
+                document.getElementById('likesCountDisplay').innerHTML = `<i class="fas fa-heart ml-1"></i> ${data.newLikes} إعجاب`;
+            }
+            btn.disabled = false;
+        }
+
+        // Options Modal (Delete)
+        function openPostOptionsModal(pid, uid) {
+            currentOptionsPostId = pid;
+            const delBtn = document.getElementById('postOptionsDeleteBtn');
+            const modal = document.getElementById('postOptionsModal');
+            
+            // Only show delete if owner
+            if (currentUserId && uid === currentUserId) {
+                delBtn.parentElement.style.display = 'flex';
+            } else {
+                delBtn.parentElement.style.display = 'none';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closePostOptionsModal() {
+            document.getElementById('postOptionsModal').classList.add('hidden');
+        }
+
+        function confirmDeleteFromOptions(e) {
+            e.stopPropagation();
+            closePostOptionsModal();
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        // Delete Logic
+        document.getElementById('cancelDeleteBtn').onclick = () => document.getElementById('deleteModal').classList.add('hidden');
+        document.getElementById('confirmDeleteBtn').onclick = async () => {
+            if(!currentOptionsPostId) return;
+            const btn = document.getElementById('confirmDeleteBtn');
+            btn.innerHTML = 'جاري الحذف...';
+            const res = await fetch(`/api/posts/${currentOptionsPostId}`, { method: 'DELETE' });
+            if(res.ok) {
+                window.location.href = '/chat_list';
+            } else {
+                btn.innerHTML = 'حذف';
+                alert('فشل الحذف');
+            }
+        };
+
+        // Copy Link
+        function copyPostLink(id, e) {
+            if(e) e.stopPropagation();
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => showToast('تم نسخ الرابط'));
+        }
+
+        function showToast(msg) {
+            let t = document.createElement('div');
+            t.className = 'toast show';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(), 200) }, 2000);
+        }
+
+        // --- COMMENTS SYSTEM (Bottom Sheet) ---
+
+        function handleComment(id) {
+            currentPostIdForComments = id;
+            const modal = document.getElementById('commentModal');
+            const content = document.getElementById('commentModalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => content.classList.add('open'), 10);
+            fetchComments(id);
+        }
+
+        function closeCommentModal() {
+            const modal = document.getElementById('commentModal');
+            const content = document.getElementById('commentModalContent');
+            content.classList.remove('open');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                currentPostIdForComments = null;
+            }, 300);
+        }
+
+        async function fetchComments(id) {
+            const list = document.getElementById('commentsList');
+            list.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500"></i></div>';
+            
+            const res = await fetch(`/api/posts/${id}/comments`);
+            const data = await res.json();
+            
+            if(data.ok) {
+                document.getElementById('commentCountBadge').innerText = data.comments.length;
+                document.getElementById('commentsCountDisplay').innerText = data.comments.length;
+                
+                if(data.comments.length === 0) {
+                    list.innerHTML = '<p class="text-center text-gray-500 py-10">لا توجد تعليقات بعد.</p>';
+                } else {
+                    list.innerHTML = data.comments.map(c => createCommentHtml(c, id)).join('');
+                    updateBadges(data.comments);
+                }
+            } else {
+                list.innerHTML = '<p class="text-center text-red-400">فشل التحميل</p>';
+            }
+        }
+
+        function createCommentHtml(c, pid) {
+            const isLiked = c.is_liked ? 'fas text-red-500' : 'far text-gray-400';
+            const likeClass = c.is_liked ? 'text-red-500' : 'text-gray-400';
+            
+            // Badge placeholder
+            const badgePlace = `<span class="badge-container" data-uid="${c.user.userId}"></span>`;
+            
+            // Replies
+            let repliesHtml = '';
+            if(c.recentReplies && c.recentReplies.length > 0) {
+                repliesHtml = c.recentReplies.map(r => `
+                    <div class="mt-2 mr-8 bg-white/5 p-2 rounded-lg flex gap-2">
+                        <img src="${r.profile_picture_url || DEFAULT_AVATAR}" class="w-5 h-5 rounded-full">
+                        <div>
+                            <span class="text-xs font-bold text-gray-300">${r.username}</span>
+                            <span class="text-xs text-gray-400 block">${r.content}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            return `
+                <div class="p-2 bg-[#242526] rounded-xl border border-gray-800" id="comment-${c.commentId}">
+                    <div class="flex gap-3">
+                        <img src="${c.user.profile_picture_url}" class="w-8 h-8 rounded-full object-cover shrink-0" onclick="window.location.href='/profile?userId=${c.user.userId}'">
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start">
+                                <div class="text-sm font-bold text-white">
+                                    ${c.user.username} ${badgePlace}
+                                </div>
+                                <div class="text-[10px] text-gray-500">${new Date(c.timestamp).toLocaleDateString()}</div>
+                            </div>
+                            <div class="text-gray-300 text-sm mt-1">${c.content}</div>
+                            
+                            <div class="flex items-center gap-4 mt-2">
+                                <button class="${likeClass} flex items-center gap-1 text-xs" onclick="toggleCommentLike('${pid}', '${c.commentId}', this)">
+                                    <i class="${isLiked} fa-heart"></i> <span class="count">${c.likes || 0}</span>
+                                </button>
+                                <button class="text-gray-400 text-xs flex items-center gap-1" onclick="document.getElementById('reply-box-${c.commentId}').classList.toggle('hidden')">
+                                    <i class="fas fa-reply"></i> رد
+                                </button>
+                            </div>
+
+                            <div id="reply-box-${c.commentId}" class="hidden mt-2 flex gap-2">
+                                <input type="text" id="reply-input-${c.commentId}" placeholder="اكتب رداً..." class="bg-[#111] text-xs text-white rounded p-1.5 flex-grow border border-gray-700 focus:outline-none">
+                                <button onclick="submitReply('${pid}', '${c.commentId}')" class="text-blue-400 text-xs px-2">إرسال</button>
+                            </div>
+
+                            ${repliesHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function updateBadges(comments) {
+            const userIds = [...new Set(comments.map(c => c.user.userId))];
+            for (let uid of userIds) {
+                try {
+                    const r = await fetch(`/api/profile?userId=${uid}`);
+                    const u = await r.json();
+                    if (u.ok && u.is_verified) {
+                        document.querySelectorAll(`.badge-container[data-uid="${uid}"]`).forEach(el => {
+                            el.innerHTML = `<img src="${VERIFIED_IMG_URL}" class="verified-badge-img">`;
+                        });
+                    }
+                } catch(e){}
+            }
+        }
+
+        // Comment Actions
+        async function toggleCommentLike(pid, cid, btn) {
+            const icon = btn.querySelector('i');
+            const countSpan = btn.querySelector('.count');
+            let count = parseInt(countSpan.textContent);
+            
+            // Optimistic UI
+            if (icon.classList.contains('fas')) {
+                icon.className = 'far fa-heart';
+                btn.className = 'text-gray-400 flex items-center gap-1 text-xs';
+                countSpan.textContent = Math.max(0, count - 1);
+            } else {
+                icon.className = 'fas fa-heart';
+                btn.className = 'text-red-500 flex items-center gap-1 text-xs';
+                countSpan.textContent = count + 1;
+            }
+            
+            await fetch(`/api/posts/${pid}/comments/${cid}/like`, { method: 'POST' });
+        }
+
+        async function submitReply(pid, cid) {
+            const input = document.getElementById(`reply-input-${cid}`);
+            const content = input.value.trim();
+            if(!content) return;
+            
+            await fetch(`/api/posts/${pid}/comments/${cid}/reply`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ content })
+            });
+            fetchComments(pid); // Refresh to show reply
+        }
+
+        document.getElementById('postCommentBtn').onclick = async () => {
+            const input = document.getElementById('newCommentInput');
+            const content = input.value.trim();
+            if(!content || !currentPostIdForComments) return;
+            
+            const btn = document.getElementById('postCommentBtn');
+            btn.disabled = true;
+            
+            const res = await fetch(`/api/posts/${currentPostIdForComments}/comment`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ content })
+            });
+            
+            if(res.ok) {
+                input.value = '';
+                fetchComments(currentPostIdForComments);
+            }
+            btn.disabled = false;
+        };
+
+    </script>
+</body>
+</html>

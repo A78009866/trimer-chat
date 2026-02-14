@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>نشر ريل جديد</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Cairo', sans-serif; background: #000; color: white; }
+    .upload-area {
+      border: 2px dashed #333; border-radius: 16px;
+      height: 300px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: 0.3s; background: #111; cursor: pointer;
+    }
+    .upload-area.active { border-color: #3b82f6; background: #1a1a1a; }
+    
+    /* سبينر التحميل */
+    .loader {
+      border: 3px solid #f3f3f3; border-radius: 50%;
+      border-top: 3px solid #3b82f6; width: 24px; height: 24px;
+      animation: spin 1s linear infinite; display: none;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-black min-h-screen">
+
+  <div class="max-w-md mx-auto min-h-screen flex flex-col bg-black">
+    
+    <div class="flex items-center justify-between p-4 border-b border-gray-800">
+      <a href="/reels" class="text-white text-lg"><i class="fas fa-arrow-right"></i></a>
+      <h1 class="font-bold text-lg">ريل جديد</h1>
+      <div style="width: 24px;"></div> 
+    </div>
+
+    <div class="flex-1 p-4 flex flex-col gap-6">
+      
+      <div id="uploadArea" class="upload-area">
+        <div id="placeholder" class="text-center">
+          <i class="fas fa-cloud-upload-alt text-4xl text-gray-500 mb-3"></i>
+          <p class="text-gray-400 text-sm font-bold">اضغط لاختيار فيديو</p>
+          <p class="text-gray-600 text-xs mt-1">MP4, MOV (الحد الأقصى 50MB)</p>
+        </div>
+        <video id="previewVideo" class="w-full h-full object-contain rounded-lg hidden" controls></video>
+      </div>
+      <input type="file" id="fileInput" accept="video/*" class="hidden">
+
+      <div>
+        <label class="block text-gray-400 text-sm mb-2 font-bold">الوصف</label>
+        <textarea id="descInput" rows="3" 
+          class="w-full bg-[#111] border border-gray-800 rounded-xl p-3 text-white focus:border-blue-500 outline-none resize-none"
+          placeholder="اكتب وصفاً للفيديو... #هاشتاق"></textarea>
+      </div>
+
+    </div>
+
+    <div class="p-4 border-t border-gray-800">
+      <button id="publishBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+        <span>نشر</span>
+        <div class="loader" id="btnLoader"></div>
+      </button>
+    </div>
+
+  </div>
+
+<script>
+  const uploadArea = document.getElementById('uploadArea');
+  const fileInput = document.getElementById('fileInput');
+  const previewVideo = document.getElementById('previewVideo');
+  const placeholder = document.getElementById('placeholder');
+  const publishBtn = document.getElementById('publishBtn');
+  const btnLoader = document.getElementById('btnLoader');
+  const descInput = document.getElementById('descInput');
+
+  let selectedFile = null;
+
+  // فتح اختيار الملف
+  uploadArea.addEventListener('click', () => fileInput.click());
+
+  // معالجة اختيار الملف
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 50 * 1024 * 1024) { // 50MB
+        alert('حجم الملف كبير جداً (الحد الأقصى 50MB)');
+        return;
+      }
+      handleFile(file);
+    }
+  });
+
+  function handleFile(file) {
+    selectedFile = file;
+    const url = URL.createObjectURL(file);
+    previewVideo.src = url;
+    previewVideo.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+  }
+
+  function setLoading(loading) {
+    if (loading) {
+      publishBtn.disabled = true;
+      publishBtn.querySelector('span').textContent = 'جاري الرفع...';
+      btnLoader.style.display = 'block';
+    } else {
+      publishBtn.disabled = false;
+      publishBtn.querySelector('span').textContent = 'نشر';
+      btnLoader.style.display = 'none';
+    }
+  }
+
+  publishBtn.addEventListener('click', async () => {
+    if (!selectedFile) {
+      alert('يرجى اختيار فيديو أولاً!');
+      return;
+    }
+
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append('media', selectedFile);
+    formData.append('description', descInput.value);
+
+    try {
+      const response = await fetch('/api/reels/create', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // تم النشر بنجاح -> توجيه إلى صفحة الريلز مع الـ ID للريل الجديد
+        window.location.href = `/reels?r=${data.reelId}`;
+      } else {
+        alert(data.error || 'حدث خطأ أثناء الرفع');
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('خطأ في الاتصال بالسيرفر');
+      setLoading(false);
+    }
+  });
+</script>
+</body>
+</html>

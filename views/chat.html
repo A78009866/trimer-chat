@@ -2,868 +2,1299 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>المحادثة</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 :root {
---bg: #000;
---glass-bg: rgba(255, 255, 255, 0.05);
---glass-border: rgba(255, 255, 255, 0.1);
---accent: #7dd3fc;
---muted: #cbd5e1;
---reply-bg: rgba(255, 255, 255, 0.08);
---reply-border: rgba(255, 255, 255, 0.15);
---reply-block-bg: rgba(255, 255, 255, 0.08);
---reply-block-border: rgba(255, 255, 255, 0.15);
+  --bg: #000;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --accent: #7dd3fc;
+  --muted: #cbd5e1;
+  --reply-bg: rgba(255, 255, 255, 0.08);
+  --reply-border: rgba(255, 255, 255, 0.15);
+  
+  /* ألوان الرسائل */
+  --msg-incoming-bg: rgba(255, 255, 255, 0.08);
+  --msg-outgoing-bg: rgba(14, 165, 233, 0.25);
 }
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
 html, body {
-height: 100%;
-margin: 0;
-font-family: 'Inter', system-ui;
-background-color: var(--bg);
-color: var(--muted);
--webkit-font-smoothing: antialiased;
-direction: rtl;
+  height: 100%;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg);
+  color: var(--muted);
+  overflow: hidden; 
+  touch-action: pan-y;
+  user-select: none;
 }
+
 .wrap {
-height: 100vh;
-display: flex;
-flex-direction: column;
-max-width: 980px;
-margin: 0 auto;
-padding: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 980px;
+  margin: 0 auto;
+  position: relative;
+  background: var(--bg);
 }
+
+/* --- Header --- */
 .top {
-display: flex;
-align-items: center;
-gap: 6px;
-justify-content: space-between;
-padding: 6px 10px;
-position: fixed; /* Changed from sticky to fixed */
-top: 0;
-left: 0; /* Added for fixed positioning */
-right: 0; /* Added for fixed positioning */
-background: var(--bg);
-z-index: 200;
-border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg);
+  z-index: 50;
+  border-bottom: 1px solid var(--glass-border);
+  height: 56px;
+  flex-shrink: 0;
 }
+
 .user-row {
-display: flex;
-align-items: center;
-gap: 6px;
-flex: 1;
-min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
 }
+
+.avatar-with-dot {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .avatar {
-width: 36px;
-height: 36px;
-border-radius: 8px;
-overflow: hidden;
-border: 1px solid rgba(255, 255, 255, 0.06);
-background: linear-gradient(135deg, #0b3146, #063048);
-display: flex;
-align-items: center;
-justify-content: center;
-flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
 }
-.avatar img {
-width: 100%;
-height: 100%;
-object-fit: cover;
-display: block;
+
+.online-dot {
+  position: absolute;
+  bottom: -2px;
+  left: -2px;
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border: 2px solid #000;
+  border-radius: 50%;
 }
+
 .meta {
-display: flex;
-flex-direction: column;
-gap: 2px;
-min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
 }
+
 .meta .name {
-font-weight: 700;
-color: #e6f0fb;
-font-size: 13px;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
+  font-weight: 700;
+  color: #fff;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
+
 .meta .sub {
-font-size: 10px;
-color: #8aa5bd;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+.back-btn {
+  color: #fff;
+  font-size: 18px;
+  padding: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Messages Area --- */
 .glass {
-flex: 1;
-display: flex;
-flex-direction: column;
-margin-bottom: 0;
-background: transparent;
-border: none;
-backdrop-filter: none;
--webkit-backdrop-filter: none;
-box-shadow: none;
-padding: 0;
-}
-.messages {
-flex: 1;
-overflow-y: auto;
-display: flex;
-flex-direction: column;
-gap: 8px;
-padding: 12px;
-padding-bottom: 80px;
-scroll-behavior: smooth;
-margin-top: 50px; /* Added margin to prevent content from hiding under the fixed header */
-}
-.msg {
-max-width: 80%;
-padding: 8px 10px;
-border-radius: 10px;
-font-size: 13px;
-line-height: 1.3;
-word-break: break-word;
-cursor: pointer;
-}
-.incoming {
-align-self: flex-start;
-background: rgba(255, 255, 255, 0.05);
-border: 1px solid rgba(255, 255, 255, 0.08);
-color: var(--muted);
-backdrop-filter: blur(10px);
--webkit-backdrop-filter: blur(10px);
-}
-.outgoing {
-align-self: flex-end;
-background: rgba(10, 100, 150, 0.3);
-color: #e6f7ff;
-border: 1px solid rgba(255, 255, 255, 0.03);
-backdrop-filter: blur(10px);
--webkit-backdrop-filter: blur(10px);
-}
-.msg-image, .msg-video {
-max-width: 100%;
-height: auto;
-display: block;
-border-radius: 6px;
-}
-.msg-audio-player {
-display: flex;
-align-items: center;
-gap: 8px;
-width: 220px;
-background: rgba(255, 255, 255, 0.1);
-border-radius: 10px;
-padding: 6px;
-backdrop-filter: blur(10px);
--webkit-backdrop-filter: blur(10px);
-}
-.incoming .msg-audio-player {
-background: rgba(255, 255, 255, 0.05);
-border: 1px solid rgba(255, 255, 255, 0.08);
-backdrop-filter: blur(10px);
--webkit-backdrop-filter: blur(10px);
-}
-.audio-play-btn {
-background: #e6f7ff;
-color: #0369a1;
-border: none;
-border-radius: 50%;
-width: 32px;
-height: 32px;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-flex-shrink: 0;
-}
-.incoming .audio-play-btn {
-background: var(--muted);
-color: var(--bg);
-}
-.audio-waveform-container {
-flex: 1;
-min-height: 40px;
-}
-.audio-time {
-font-size: 11px;
-color: #e6f7ffcc;
-}
-.incoming .audio-time {
-color: #cbd5e1cc;
-}
-.meta-time {
-font-size: 10px;
-color: #9fb3c8;
-margin-top: 4px;
-text-align: left;
-}
-.composer {
-display: flex;
-flex-direction: column;
-gap: 8px;
-padding: 6px 10px;
-border-top: 1px solid rgba(255, 255, 255, 0.1);
-position: fixed;
-bottom: 0;
-left: 0;
-right: 0;
-background-color: var(--bg);
-z-index: 100;
-box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5);
-}
-.composer-input-row {
-display: flex;
-gap: 6px;
-align-items: flex-end;
-}
-.composer textarea {
-flex: 1;
-min-height: 32px;
-max-height: 100px;
-resize: none;
-padding: 6px 12px;
-border-radius: 16px;
-border: 1px solid rgba(255, 255, 255, 0.1);
-background: transparent;
-color: var(--muted);
-transition: all 0.2s ease;
-direction: rtl;
-font-size: 12px;
-}
-.composer textarea:focus {
-outline: none;
-border-color: var(--accent);
-}
-.composer-btn {
-width: 32px;
-height: 32px;
-background: linear-gradient(180deg, #06b6d4, #0891b2);
-color: #012;
-border: none;
-border-radius: 50%;
-cursor: pointer;
-display: flex;
-align-items: center;
-justify-content: center;
-transition: all 0.2s ease;
-font-size: 16px;
-line-height: 1;
-flex-shrink: 0;
-}
-.composer-btn:disabled {
-background: #444;
-cursor: not-allowed;
-}
-.composer-btn:hover {
-transform: scale(1.05);
-}
-.file-input-btn, .voice-btn {
-background: rgba(255, 255, 255, 0.05);
-border: 1px solid rgba(255, 255, 255, 0.1);
-color: var(--muted);
-padding: 6px;
-border-radius: 50%;
-cursor: pointer;
-font-size: 16px;
-line-height: 1;
-width: 32px;
-height: 32px;
-display: flex;
-align-items: center;
-justify-content: center;
-transition: all 0.2s ease;
-flex-shrink: 0;
-}
-.file-input-btn:hover, .voice-btn:hover {
-background: rgba(255, 255, 255, 0.1);
-}
-#file-preview {
-display: flex;
-align-items: center;
-gap: 6px;
-padding: 6px;
-background: rgba(255, 255, 255, 0.05);
-border-radius: 6px;
-border: 1px solid rgba(255, 255, 255, 0.1);
-font-size: 12px;
-}
-#file-preview img, #file-preview video, #file-preview audio {
-max-height: 40px;
-border-radius: 4px;
-}
-.small {
-font-size: 11px;
-color: #8aa5bd;
-}
-.recording-indicator {
-display: none;
-align-items: center;
-gap: 6px;
-padding: 6px 10px;
-background: rgba(255, 0, 0, 0.2);
-border-radius: 18px;
-font-size: 12px;
-color: #ff6b6b;
-}
-.recording-dot {
-width: 8px;
-height: 8px;
-background-color: #ff6b6b;
-border-radius: 50%;
-animation: pulse 1.5s infinite;
-}
-@keyframes pulse {
-0% { opacity: 1; }
-50% { opacity: 0.3; }
-100% { opacity: 1; }
-}
-.spin {
-animation: spin 1s linear infinite;
-}
-@keyframes spin {
-100% { transform: rotate(360deg); }
-}
-.btn {
-padding: 6px;
-font-size: 12px;
-}
-#reply-container {
-display: none;
-align-items: center;
-gap: 8px;
-padding: 6px 12px;
-border-radius: 12px;
-background: var(--reply-bg);
-border: 1px solid var(--reply-border);
-margin-top: -4px;
-}
-#reply-content {
-flex: 1;
-display: flex;
-flex-direction: column;
-min-width: 0;
-font-size: 12px;
-line-height: 1.3;
-}
-#reply-sender {
-font-weight: 600;
-color: var(--accent);
-font-size: 11px;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
-}
-#reply-text {
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
-color: var(--muted);
-}
-#cancel-reply-btn {
-background: none;
-border: none;
-color: var(--muted);
-cursor: pointer;
-font-size: 14px;
-padding: 4px;
-display: flex;
-align-items: center;
-justify-content: center;
-}
-/* New CSS for reply block inside messages */
-.reply-block {
-  padding: 6px 10px;
-  margin-bottom: 6px;
-  border-radius: 8px;
-  background: var(--reply-block-bg);
-  border-right: 3px solid var(--accent);
+  flex: 1;
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.incoming .reply-block {
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  padding-bottom: 90px; /* Space for composer */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0; 
+  transition: opacity 0.2s ease;
+}
+
+/* --- Message Bubbles --- */
+.msg-container {
+  display: flex;
+  width: 100%;
+  position: relative;
+  margin-bottom: 12px; 
+  touch-action: pan-y; 
+}
+
+.msg-wrapper {
+  position: relative;
+  max-width: 80%;
+  z-index: 2;
+  transition: transform 0.1s linear; 
+  will-change: transform;
+}
+
+.msg {
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: visible !important; 
+}
+
+/* Incoming */
+.incoming-container { justify-content: flex-start; }
+.incoming-container .msg {
+  background: var(--msg-incoming-bg);
+  color: #f1f5f9;
+  border-bottom-right-radius: 4px;
+}
+
+/* Outgoing */
+.outgoing-container { justify-content: flex-end; }
+.outgoing-container .msg {
+  background: var(--msg-outgoing-bg);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-bottom-left-radius: 4px;
+}
+
+/* Reply Indicator Icon */
+.reply-indicator-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%) scale(0);
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  transition: transform 0.2s;
+  z-index: 1;
+}
+
+/* Media Styles */
+.msg-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-top: 4px;
+  display: block;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.msg-image:active { opacity: 0.8; }
+
+.msg-video {
+  max-width: 100%;
+  width: 260px;
+  max-height: 300px;
+  height: auto;
+  border-radius: 12px;
+  margin-top: 4px;
+  display: block;
+  background: #000;
+  object-fit: contain;
+}
+
+/* Audio Player - Fixed Styles */
+.msg-audio-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 240px; /* Slightly wider */
+  padding: 6px 0;
+}
+
+.audio-play-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.audio-play-btn:active { background: rgba(255,255,255,0.3); }
+
+.audio-waveform-container { 
+    flex: 1; 
+    height: 34px; 
+    min-width: 120px;
+    position: relative;
+    display: block;
+    /* Force visibility */
+    opacity: 1 !important;
+}
+.audio-time { font-size: 11px; color: #fff; font-weight: 600; min-width: 32px; text-align: center; }
+
+/* Reply Context */
+.reply-context {
+  background: rgba(0, 0, 0, 0.2);
+  border-right: 3px solid rgba(255,255,255,0.5);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+}
+.reply-context-sender { font-weight: 700; color: #fff; margin-bottom: 2px; }
+.reply-context-text { color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Metadata */
+.msg-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+}
+
+/* Reaction Badge on Message */
+.msg-reaction-badge {
+  position: absolute;
+  bottom: -12px;
+  z-index: 10;
+  background: #1e293b;
+  border: 2px solid #000;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  line-height: 1;
+}
+.outgoing-container .msg-reaction-badge { left: -8px; }
+.incoming-container .msg-reaction-badge { right: -8px; }
+
+/* Reaction Menu (Floating & Fixed) */
+.reaction-menu {
+  position: fixed;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50px;
+  padding: 8px 14px;
+  display: none;
+  gap: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  z-index: 9999;
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.reaction-item {
+  font-size: 24px;
+  cursor: pointer;
+  transition: transform 0.1s;
+  user-select: none;
+  line-height: 1;
+}
+.reaction-item:hover { transform: scale(1.3); }
+.reaction-item:active { transform: scale(0.9); }
+
+/* --- Full Screen Image Overlay --- */
+.img-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.img-overlay.active { display: flex; opacity: 1; }
+.img-overlay img {
+  max-width: 95%;
+  max-height: 90%;
+  border-radius: 8px;
+  box-shadow: 0 5px 30px rgba(0,0,0,0.5);
+  object-fit: contain;
+  transition: transform 0.2s;
+}
+.img-close-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px; /* RTL layout */
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.2);
+  z-index: 10001;
+}
+.img-close-btn:active { background: rgba(255,255,255,0.3); }
+
+/* --- Composer --- */
+.composer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--bg);
+  border-top: 1px solid var(--glass-border);
+  padding: 8px 10px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Reply Preview */
+#reply-container {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--reply-bg);
+  border: 1px solid var(--reply-border);
+  padding: 8px 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  animation: slideUp 0.2s ease-out;
+}
+@keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.reply-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; }
+.reply-to-label { font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 2px; }
+.reply-preview-text { font-size: 11px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* File/Audio Preview in Composer */
+#file-preview-area {
+  display: none;
+  padding: 8px;
   background: rgba(255, 255, 255, 0.05);
-  border-right: 3px solid #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  align-items: center;
+  gap: 10px;
 }
+.file-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: #000; }
+.preview-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.preview-filename { font-size: 12px; color: #fff; font-weight: 600; margin-bottom: 4px; }
+.preview-sub { font-size: 10px; color: #94a3b8; }
 
-.reply-block-sender {
-  font-weight: 600;
-  color: var(--accent);
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.composer-audio-wave { width: 100%; height: 30px; border-radius: 4px; }
 
-.incoming .reply-block-sender {
-  color: #cbd5e1;
+/* Close Button */
+.close-btn {
+  background: rgba(255,255,255,0.1);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  border: none;
 }
+.close-btn:hover { background: #ef4444; }
 
-.reply-block-text {
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Input Row */
+.input-row { display: flex; align-items: flex-end; gap: 8px; }
+
+.action-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
 }
+.action-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
+
+textarea {
+  flex: 1;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 8px 14px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  resize: none;
+  min-height: 38px;
+  max-height: 120px;
+  outline: none;
+  line-height: 1.4;
+}
+textarea:focus { border-color: var(--accent); }
+
+/* Sending Spinner */
+.sending-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.send-btn {
+  background: #0ea5e9;
+  border: none;
+  color: #fff;
+}
+.send-btn:disabled { background: #334155; opacity: 0.7; }
+
+/* Recording UI */
+#recording-ui {
+  display: none;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  background: rgba(185, 28, 28, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 20px;
+  padding: 0 15px;
+  height: 38px;
+}
+.rec-dot { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; animation: pulse 1s infinite; }
+.rec-time { font-size: 13px; color: #fff; flex: 1; font-weight: 600; font-feature-settings: "tnum"; }
+.cancel-rec { color: #fca5a5; cursor: pointer; font-size: 12px; font-weight: 600; }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
 </style>
 <script src="https://unpkg.com/wavesurfer.js"></script>
 </head>
 <body>
+
+<div id="image-overlay" class="img-overlay" onclick="closeImageModal(event)">
+  <div class="img-close-btn" onclick="closeImageModal(event)">
+    <i class="fas fa-times"></i>
+  </div>
+  <img id="overlay-img" src="" alt="Full Preview" />
+</div>
+
 <div class="wrap">
-<div class="top">
-<div class="user-row">
-<a class="btn" href="/chat_list" style="text-decoration:none;color:var(--muted);">◀</a>
-<a id="other-profile-link" href="#" class="avatar"><img id="other-avatar" src="https://res.cloudinary.com/duixjs8az/image/upload/v1/profile_pics/default_profile.png" alt="avatar"></a>
-<div class="meta">
-<div id="other-name" class="name">جارٍ التحميل...</div>
-<div id="other-username" class="sub small"></div>
-</div>
-</div>
-<div>
-<a href="/logout" style="text-decoration:none;color:var(--muted);font-size:12px;">تسجيل خروج</a>
-</div>
-</div>
-<div class="glass">
-<div id="messages" class="messages">
-<div class="small" style="text-align:center">جاري تحميل الرسائل...</div>
-</div>
-</div>
-<form id="sendForm" class="composer" onsubmit="return false;">
-<div id="reply-container">
-<div id="reply-content">
-<span id="reply-sender"></span>
-<span id="reply-text"></span>
-</div>
-<button id="cancel-reply-btn" type="button" title="إلغاء الرد">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-<path d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm3.707 7.293a1 1 0 00-1.414-1.414L12 10.586l-2.293-2.293a1 1 0 00-1.414 1.414L10.586 12l-2.293 2.293a1 1 0 001.414 1.414L12 13.414l2.293 2.293a1 1 0 001.414-1.414L13.414 12l2.293-2.293z"/>
-</svg>
-</button>
-</div>
-<div id="file-preview" style="display:none;"></div>
-<div id="recording-indicator" class="recording-indicator">
-<div class="recording-dot"></div>
-<span>جاري التسجيل...</span>
-<span id="recording-time">0:00</span>
-</div>
-<div class="composer-input-row">
-<label for="media-upload" class="file-input-btn" title="إرفاق ملف">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7v-2h4V7h2v4h4v2h-4v4h-2z"/>
-</svg>
-</label>
-<input type="file" id="media-upload" style="display:none;" accept="image/*,video/*,audio/*">
-<textarea id="msgInput" placeholder="اكتب رسالة..." aria-label="اكتب رسالة"></textarea>
-<button id="voiceBtn" class="voice-btn" type="button" title="تسجيل صوت">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/>
-</svg>
-</button>
-<button id="sendBtn" class="composer-btn" type="submit" title="إرسال">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-</svg>
-</button>
-</div>
-</form>
-</div>
-<script>
-function getQuery(name) {
-const params = new URLSearchParams(window.location.search);
-return params.get(name);
-}
-const otherId = getQuery('other_id');
-if (!otherId) {
-alert('معرف المستخدم غير موجود في الرابط.');
-window.location.href = '/chat_list';
-}
-const messagesEl = document.getElementById('messages');
-const otherAvatar = document.getElementById('other-avatar');
-const otherName = document.getElementById('other-name');
-const otherUsername = document.getElementById('other-username');
-const otherProfileLink = document.getElementById('other-profile-link');
-const msgInput = document.getElementById('msgInput');
-const sendForm = document.getElementById('sendForm');
-const sendBtn = document.getElementById('sendBtn');
-const mediaUploadInput = document.getElementById('media-upload');
-const filePreview = document.getElementById('file-preview');
-const voiceBtn = document.getElementById('voiceBtn');
-const recordingIndicator = document.getElementById('recording-indicator');
-const recordingTime = document.getElementById('recording-time');
-const replyContainer = document.getElementById('reply-container');
-const replySender = document.getElementById('reply-sender');
-const replyText = document.getElementById('reply-text');
-const cancelReplyBtn = document.getElementById('cancel-reply-btn');
-let uploadedFile = null;
-let mediaRecorder;
-let audioChunks = [];
-let recordingStartTime;
-let recordingInterval;
-let myId;
-let activeAudioPlayer = null;
-let replyToMessage = null;
-otherProfileLink.href = `/profile?user_id=${otherId}`;
-function scrollToBottom() {
-messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-async function fetchOtherProfile() {
-try {
-const res = await fetch('/api/users', { credentials: 'same-origin' });
-if (res.status === 401) return window.location.href = '/login';
-const list = await res.json();
-const other = Array.isArray(list) ? list.find(u => u.uid === otherId || u.id === otherId) : null;
-if (other) {
-otherAvatar.src = other.profile_picture_url || 'https://res.cloudinary.com/duixjs8az/image/upload/v1/profile_pics/default_profile.png';
-otherName.textContent = other.full_name || other.username || 'مستخدم';
-otherUsername.textContent = other.username ? ('@' + other.username) : '';
-} else {
-otherName.textContent = 'مستخدم';
-otherUsername.textContent = otherId;
-}
-} catch (err) {
-console.error('fetchOtherProfile', err);
-}
-}
-let lastMessages = [];
-async function fetchMessages() {
-try {
-const res = await fetch('/api/messages/' + encodeURIComponent(otherId), { credentials: 'same-origin' });
-if (res.status === 401) return window.location.href = '/login';
-const data = await res.json();
-if (!Array.isArray(data)) return;
-const jsonKey = JSON.stringify(data);
-if (jsonKey === JSON.stringify(lastMessages)) return;
-lastMessages = data;
-const wasScrolledToBottom = messagesEl.scrollHeight - messagesEl.clientHeight <= messagesEl.scrollTop + 1;
-messagesEl.innerHTML = '';
-if (data.length === 0) {
-messagesEl.innerHTML = '<div class="small" style="text-align:center">لا توجد رسائل بعد</div>';
-return;
-}
-data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-if (!myId) {
-const profileRes = await fetch('/api/profile');
-if (profileRes.ok) {
-const user = await profileRes.json();
-myId = user.id;
-}
-}
-data.forEach(msg => {
-const isIncoming = (msg.sender_id !== myId);
-const el = document.createElement('div');
-el.className = 'msg ' + (isIncoming ? 'incoming' : 'outgoing');
-let contentHtml = '';
-
-// Check and display reply block
-if (msg.replied_to_id) {
-    const repliedSender = msg.replied_to_sender || 'مستخدم';
-    const repliedContent = msg.replied_to_content || 'رسالة محذوفة';
-    contentHtml += `
-      <div class="reply-block">
-        <span class="reply-block-sender">${escapeHtml(repliedSender)}</span>
-        <span class="reply-block-text">${escapeHtml(repliedContent)}</span>
+  <div class="top">
+    <a href="/users_list" class="back-btn">
+      <i class="fas fa-chevron-right"></i>
+    </a>
+    <a id="profile-link" href="#" class="user-row">
+      <div class="avatar-with-dot">
+        <img id="header-avatar" src="https://via.placeholder.com/40" class="avatar">
+        <div id="header-online" class="online-dot" style="display:none"></div>
       </div>
-    `;
-}
+      <div class="meta">
+        <div id="header-name" class="name">...</div>
+        <div id="header-status" class="sub"></div>
+      </div>
+    </a>
+  </div>
 
-// Display media and text content
-const isWebmAudio = msg.media_url && msg.media_url.endsWith('.webm');
-if (msg.media_url) {
-if (msg.media_type.startsWith('image')) {
-contentHtml += `<img src="${escapeAttr(msg.media_url)}" class="msg-image" alt="image">`;
-} else if (msg.media_type.startsWith('audio') || isWebmAudio) {
-contentHtml += createAudioPlayer(msg.media_url, isIncoming);
-} else if (msg.media_type.startsWith('video')) {
-contentHtml += `<video src="${escapeAttr(msg.media_url)}" controls class="msg-video"></video>`;
-}
-}
-if (msg.content) {
-contentHtml += `<div>${escapeHtml(msg.content)}</div>`;
-}
+  <div class="glass">
+    <div id="messages" class="messages"></div>
+    
+    <div id="reaction-menu" class="reaction-menu">
+      <div class="reaction-item" onclick="sendReaction('😂')">😂</div>
+      <div class="reaction-item" onclick="sendReaction('♥️')">♥️</div>
+      <div class="reaction-item" onclick="sendReaction('😢')">😢</div>
+      <div class="reaction-item" onclick="sendReaction('😡')">😡</div>
+      <div class="reaction-item" onclick="sendReaction('👍')">👍</div>
+    </div>
+  </div>
 
-el.innerHTML = `<div>${contentHtml}</div><div class="meta-time">${formatTime(msg.created_at)}</div>`;
-el.setAttribute('data-msg-id', msg.id);
-el.setAttribute('data-sender-id', msg.sender_id);
-el.setAttribute('data-msg-content', msg.content || 'ملف مرفق');
-el.setAttribute('data-sender-name', isIncoming ? otherName.textContent : 'أنت');
-messagesEl.appendChild(el);
-});
-attachAudioPlayerListeners();
-attachReplyListeners();
-if (wasScrolledToBottom) {
-scrollToBottom();
-}
-} catch (err) {
-console.error('fetchMessages', err);
-}
-}
-function attachReplyListeners() {
-document.querySelectorAll('.msg').forEach(msgEl => {
-msgEl.addEventListener('click', () => {
-const msgId = msgEl.getAttribute('data-msg-id');
-const senderName = msgEl.getAttribute('data-sender-name');
-const msgContent = msgEl.getAttribute('data-msg-content');
-if (msgContent.trim() !== 'ملف مرفق') {
-replyToMessage = {
-    id: msgId,
-    senderName: senderName,
-    content: msgContent
-};
-replySender.textContent = `الرد على ${senderName}`;
-replyText.textContent = msgContent;
-replyContainer.style.display = 'flex';
-msgInput.focus();
-}
-});
-});
-cancelReplyBtn.addEventListener('click', () => {
-replyToMessage = null;
-replyContainer.style.display = 'none';
-});
-}
-function createAudioPlayer(src, isIncoming) {
-const uniqueId = 'waveform_' + Math.random().toString(36).substr(2, 9);
-return `
-<div class="msg-audio-player">
-<button class="audio-play-btn">
-<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>
-</button>
-<div class="audio-waveform-container" data-src="${src}" data-is-incoming="${isIncoming}" id="${uniqueId}"></div>
-<span class="audio-time">0:00</span>
+  <form id="composer" class="composer" onsubmit="return false;">
+    
+    <div id="reply-container">
+      <div class="reply-info">
+        <div class="reply-to-label">الرد على <span id="reply-to-name"></span></div>
+        <div id="reply-to-text" class="reply-preview-text"></div>
+      </div>
+      <button type="button" class="close-btn" id="cancel-reply">
+        <i class="fas fa-times" style="font-size:12px"></i>
+      </button>
+    </div>
+
+    <div id="file-preview-area"></div>
+
+    <div class="input-row">
+      <input type="file" id="media-input" style="display:none" accept="image/*,video/*,audio/*">
+      
+      <button type="button" class="action-btn" id="attach-btn">
+        <i class="fas fa-paperclip" style="font-size:16px"></i>
+      </button>
+
+      <div id="recording-ui">
+        <div class="rec-dot"></div>
+        <div class="rec-time" id="rec-timer">0:00</div>
+        <div class="cancel-rec" id="cancel-rec-btn">إلغاء</div>
+      </div>
+
+      <textarea id="msg-input" placeholder="اكتب رسالة..." rows="1"></textarea>
+      
+      <button type="button" class="action-btn" id="mic-btn">
+        <i class="fas fa-microphone" style="font-size:16px"></i>
+      </button>
+
+      <button type="submit" class="action-btn send-btn" id="send-btn" style="display:none">
+        <i class="fas fa-paper-plane" style="font-size:16px"></i>
+      </button>
+    </div>
+  </form>
 </div>
-`;
-}
-function attachAudioPlayerListeners() {
-document.querySelectorAll('.msg-audio-player').forEach(player => {
-const waveformContainer = player.querySelector('.audio-waveform-container');
-const playBtn = player.querySelector('.audio-play-btn');
-const timeDisplay = player.querySelector('.audio-time');
-const src = waveformContainer.dataset.src;
-const isIncoming = waveformContainer.dataset.isIncoming === 'true';
-const wavesurfer = WaveSurfer.create({
-container: waveformContainer,
-waveColor: isIncoming ? '#cbd5e1' : '#e6f7ff',
-progressColor: isIncoming ? '#8aa5bd' : '#7dd3fc',
-cursorColor: 'transparent',
-barWidth: 2,
-height: 40,
-barGap: 1,
-barRadius: 2,
-minPxPerSec: 10,
-});
-wavesurfer.load(src);
-playBtn.onclick = () => {
-if (activeAudioPlayer && activeAudioPlayer !== wavesurfer) {
-activeAudioPlayer.pause();
-}
-activeAudioPlayer = wavesurfer;
-wavesurfer.playPause();
-};
-wavesurfer.on('play', () => {
-playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
-});
-wavesurfer.on('pause', () => {
-playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M8 5v14l11-7z"/></svg>';
-});
-wavesurfer.on('ready', () => {
-timeDisplay.textContent = formatAudioTime(wavesurfer.getDuration());
-});
-wavesurfer.on('timeupdate', (currentTime) => {
-timeDisplay.textContent = formatAudioTime(currentTime);
-});
-});
-}
-function formatAudioTime(seconds) {
-if (isNaN(seconds)) return '0:00';
-const min = Math.floor(seconds / 60);
-const sec = Math.floor(seconds % 60);
-return `${min}:${sec < 10 ? '0' : ''}${sec}`;
-}
-function formatTime(dateString) {
-const date = new Date(dateString);
-const now = new Date();
-if (date.toDateString() === now.toDateString()) {
-return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-} else {
-return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
-date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-}
-async function sendMessage() {
-let content = msgInput.value.trim();
-if (!content && !uploadedFile && audioChunks.length === 0) return;
-sendBtn.disabled = true;
-sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16" class="spin"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 6v6l4 2-1 2-5-3.01V6z"/></svg>';
-const formData = new FormData();
-formData.append('other_id', otherId);
-formData.append('content', content);
 
-if (replyToMessage) {
-    formData.append('replied_to_id', replyToMessage.id);
-    formData.append('replied_to_content', replyToMessage.content);
-    formData.append('replied_to_sender', replyToMessage.senderName);
+<script>
+// --- Config & State ---
+const urlParams = new URLSearchParams(window.location.search);
+const otherId = urlParams.get('contactId');
+let myId = null;
+let lastMessagesHash = ''; 
+let replyData = null; 
+let uploadedFile = null;
+let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
+let recTimerInterval = null;
+let audioWaveSurfers = {}; // Stores { id: WaveSurferInstance }
+let composerWaveSurfer = null;
+let activeLongPressMsgId = null;
+
+// DOM Elements
+const messagesEl = document.getElementById('messages');
+const msgInput = document.getElementById('msg-input');
+const sendBtn = document.getElementById('send-btn');
+const micBtn = document.getElementById('mic-btn');
+const attachBtn = document.getElementById('attach-btn');
+const mediaInput = document.getElementById('media-input');
+const replyContainer = document.getElementById('reply-container');
+const recordingUi = document.getElementById('recording-ui');
+const filePreviewArea = document.getElementById('file-preview-area');
+const reactionMenu = document.getElementById('reaction-menu');
+
+const VERIFIED_ICON = `<img src="https://res.cloudinary.com/duixjs8az/image/upload/v1768036959/post_media/1768036959482-badge.png" style="width:14px;height:14px;margin-right:4px;vertical-align:middle;">`;
+
+// --- Init ---
+async function init() {
+  if (!otherId) return window.location.href = '/chat_list';
+  
+  // Fetch My ID
+  try {
+    const myRes = await fetch('/api/profile');
+    const myData = await myRes.json();
+    myId = myData.id;
+  } catch(e) { console.error(e); }
+
+  // Header Info
+  fetchProfile();
+
+  // Load Messages
+  await loadMessages(true);
+  setInterval(() => loadMessages(false), 3000);
+
+  // Resize Textarea
+  msgInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    toggleSendButton();
+  });
+
+  // Hide Reaction Menu on click elsewhere
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.reaction-menu') && activeLongPressMsgId) {
+       reactionMenu.style.display = 'none';
+       activeLongPressMsgId = null;
+    }
+  });
+  
+  // Handle Scroll to hide menu
+  messagesEl.addEventListener('scroll', () => {
+    if(reactionMenu.style.display === 'flex') {
+        reactionMenu.style.display = 'none';
+        activeLongPressMsgId = null;
+    }
+  });
+
+  // Close Image Overlay on ESC
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeImageModal();
+  });
 }
 
-if (uploadedFile) {
-formData.append('media', uploadedFile);
-} else if (audioChunks.length > 0) {
-const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-formData.append('media', audioBlob, 'recording.wav');
+// --- Fetch Profile ---
+async function fetchProfile() {
+  try {
+    const res = await fetch(`/api/profile/${otherId}`);
+    const data = await res.json();
+    if(data) {
+      document.getElementById('header-name').innerHTML = escapeHtml(data.full_name || data.username) + (data.is_verified ? VERIFIED_ICON : '');
+      document.getElementById('header-avatar').src = data.profile_picture_url || 'https://via.placeholder.com/40';
+      document.getElementById('profile-link').href = `/profile?userId=${otherId}`;
+      if(data.is_online) {
+        document.getElementById('header-online').style.display = 'block';
+        const st = document.getElementById('header-status');
+        st.textContent = 'متصل الآن';
+        st.style.color = '#22c55e';
+      } else {
+         document.getElementById('header-status').textContent = 'غير متصل';
+      }
+    }
+  } catch(e) {}
 }
-try {
-const res = await fetch('/api/messages/send', {
-method: 'POST',
-credentials: 'same-origin',
-body: formData
-});
-if (res.status === 401) return window.location.href = '/login';
-const result = await res.json();
-if (result && result.ok) {
-msgInput.value = '';
-uploadedFile = null;
-audioChunks = [];
-filePreview.style.display = 'none';
-filePreview.innerHTML = '';
-replyToMessage = null;
-replyContainer.style.display = 'none';
-await fetchMessages();
-scrollToBottom();
-} else {
-console.error('send failed', result);
-alert('فشل في إرسال الرسالة');
+
+// --- Messages Logic (FIXED: Append only, Don't clear innerHTML) ---
+async function loadMessages(initial = false) {
+  try {
+    // Request up to 1000 messages to show full history
+    const res = await fetch(`/api/messages/${otherId}?limit=1000`);
+    const data = await res.json();
+    if(!data.ok) return;
+
+    // Detect if content changed to avoid heavy processing
+    const currentHash = JSON.stringify(data.messages.map(m => m.messageId + (m.reaction || '')));
+    if (currentHash === lastMessagesHash) return; 
+    lastMessagesHash = currentHash;
+
+    const isAtBottom = messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 60;
+    
+    // Process messages intelligently (Diffing)
+    data.messages.forEach(msg => {
+        const existingMsg = document.querySelector(`[data-msg-id="${msg.messageId}"]`);
+        
+        if (!existingMsg) {
+            // New message: append it
+            const msgNode = createMsgElement(msg);
+            messagesEl.appendChild(msgNode);
+        } else {
+            // Update existing message (e.g. Reactions changed)
+            const existingBadge = existingMsg.querySelector('.msg-reaction-badge');
+            if(msg.reaction) {
+                if(existingBadge) {
+                   if(existingBadge.textContent !== msg.reaction) existingBadge.textContent = msg.reaction;
+                } else {
+                   const bubble = existingMsg.querySelector('.msg');
+                   bubble.style.marginBottom = "8px"; 
+                   const badge = document.createElement('div');
+                   badge.className = 'msg-reaction-badge';
+                   badge.textContent = msg.reaction;
+                   bubble.appendChild(badge);
+                }
+            } else if(existingBadge) {
+                existingBadge.remove();
+            }
+        }
+    });
+
+    if (initial) {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      messagesEl.style.opacity = '1';
+      markRead();
+    } else if (isAtBottom) {
+      scrollToBottom();
+      markRead();
+    }
+  } catch(e) { console.error(e); }
 }
-} catch (err) {
-console.error('sendMessage error', err);
-alert('حدث خطأ أثناء الإرسال');
-} finally {
-sendBtn.disabled = false;
-sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+
+function scrollToBottom() {
+  messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
 }
-}
+
 async function markRead() {
-try {
-await fetch('/api/mark_read', {
-method: 'POST',
-credentials: 'same-origin',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ other_id: otherId })
-});
-} catch (err) {
-console.error('markRead', err);
+  await fetch('/api/mark_read', {
+    method: 'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({other_id: otherId})
+  });
 }
+
+// --- Message Builder ---
+function createMsgElement(msg) {
+  const isMe = msg.senderId === myId;
+  const wrapper = document.createElement('div');
+  wrapper.className = `msg-container ${isMe ? 'outgoing-container' : 'incoming-container'}`;
+
+  // Reply Icon for Swipe
+  const icon = document.createElement('div');
+  icon.className = 'reply-indicator-icon';
+  icon.innerHTML = '<i class="fas fa-reply"></i>';
+  if (isMe) icon.style.left = '10px'; else icon.style.right = '10px';
+  wrapper.appendChild(icon);
+
+  const inner = document.createElement('div');
+  inner.className = 'msg-wrapper';
+  
+  const bubble = document.createElement('div');
+  bubble.className = 'msg';
+  handleMessageInteractions(bubble, msg.messageId);
+
+  // Reply Context
+  if (msg.replied_to_id) {
+    const ctx = document.createElement('div');
+    ctx.className = 'reply-context';
+    ctx.innerHTML = `
+      <div class="reply-context-sender">${escapeHtml(msg.replied_to_sender || 'مستخدم')}</div>
+      <div class="reply-context-text">${getLocalizedType(msg.replied_to_content)}</div>
+    `;
+    ctx.onclick = (e) => {
+        e.stopPropagation();
+        const original = document.querySelector(`[data-msg-id="${msg.replied_to_id}"]`);
+        if(original) original.scrollIntoView({behavior:'smooth', block:'center'});
+    };
+    bubble.appendChild(ctx);
+  }
+
+  // Content
+  let contentHtml = '';
+  if (msg.media) {
+    const url = msg.media.url;
+    const type = msg.media.type || '';
+    
+    if (type.startsWith('image')) {
+        contentHtml += `<img src="${url}" class="msg-image" onclick="openImageModal('${url}')">`;
+    } else if (type.startsWith('video')) {
+        contentHtml += `<video src="${url}" controls playsinline class="msg-video"></video>`;
+    } else if (type.startsWith('audio') || url.endsWith('.webm') || url.endsWith('.mp3')) {
+       const audioId = 'audio-' + msg.messageId;
+       contentHtml += `
+         <div class="msg-audio-player">
+           <button class="audio-play-btn" onclick="playAudio('${url}', '${audioId}', this)">
+             <i class="fas fa-play" style="font-size:14px"></i>
+           </button>
+           <div id="${audioId}" class="audio-waveform-container"></div>
+           <div class="audio-time">...</div>
+         </div>
+       `;
+       // Initialize waveform with delay to ensure element is ready
+       setTimeout(() => initWaveform(audioId, url, isMe), 100);
+    }
+  }
+  
+  if (msg.content) {
+    contentHtml += `<div style="margin-top:${msg.media?'6px':'0'}">${escapeHtml(msg.content)}</div>`;
+  }
+  
+  // Meta
+  const time = new Date(msg.timestamp).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+  const check = isMe ? (msg.is_read ? '<i class="fas fa-check-double" style="color:#6ee7b7"></i>' : '<i class="fas fa-check"></i>') : '';
+  contentHtml += `<div class="msg-meta">${time} ${check}</div>`;
+
+  if (msg.reaction) {
+    bubble.style.marginBottom = "8px"; 
+    const badge = document.createElement('div');
+    badge.className = 'msg-reaction-badge';
+    badge.textContent = msg.reaction;
+    bubble.appendChild(badge);
+  }
+
+  bubble.innerHTML += contentHtml;
+  inner.appendChild(bubble);
+  wrapper.appendChild(inner);
+
+  enableSwipeToReply(wrapper, inner, icon, msg);
+  wrapper.setAttribute('data-msg-id', msg.messageId);
+  return wrapper;
 }
-function escapeHtml(s) {
-if (!s && s !== 0) return '';
-return String(s).replace(/[&<>"']/g, function(m) {
-return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-});
+
+// --- Image Lightbox Functions ---
+function openImageModal(src) {
+  const overlay = document.getElementById('image-overlay');
+  const img = document.getElementById('overlay-img');
+  img.src = src;
+  overlay.style.display = 'flex';
+  setTimeout(() => overlay.classList.add('active'), 10);
 }
-function escapeAttr(s) {
-if (!s && s !== 0) return '';
-return String(s).replace(/[&<>"']/g, function(m) {
-return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
-});
+
+function closeImageModal(e) {
+  if(e && e.target.id === 'overlay-img') return;
+  const overlay = document.getElementById('image-overlay');
+  overlay.classList.remove('active');
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    document.getElementById('overlay-img').src = '';
+  }, 300);
 }
-async function startRecording() {
-try {
-const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-mediaRecorder = new MediaRecorder(stream);
-audioChunks = [];
-mediaRecorder.ondataavailable = event => {
-audioChunks.push(event.data);
+
+// --- Interactions: Double Tap & Long Press ---
+function handleMessageInteractions(element, messageId) {
+  let touchStartTime = 0;
+  let longPressTimer = null;
+  let lastTap = 0;
+
+  element.addEventListener('click', (e) => {
+    if(e.target.closest('button') || e.target.closest('img')) return;
+    
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      sendReaction('♥️', messageId);
+      createHeartAnimation(element);
+    }
+    lastTap = now;
+  });
+
+  element.addEventListener('touchstart', (e) => {
+    touchStartTime = Date.now();
+    longPressTimer = setTimeout(() => {
+      showReactionMenu(element, messageId);
+    }, 500); 
+  }, {passive: true});
+
+  element.addEventListener('touchend', () => {
+    if (Date.now() - touchStartTime < 500) {
+      clearTimeout(longPressTimer);
+    }
+  });
+  
+  element.addEventListener('touchmove', () => clearTimeout(longPressTimer)); 
+
+  element.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showReactionMenu(element, messageId);
+  });
+}
+
+function showReactionMenu(element, messageId) {
+  activeLongPressMsgId = messageId;
+  const rect = element.getBoundingClientRect();
+  
+  reactionMenu.style.display = 'flex';
+  
+  const menuWidth = reactionMenu.offsetWidth;
+  const menuHeight = reactionMenu.offsetHeight;
+  
+  let top = rect.top - menuHeight - 10;
+  let left = rect.left + (rect.width / 2) - (menuWidth / 2);
+  
+  if (top < 10) top = rect.bottom + 10;
+  if (left < 10) left = 10;
+  if (left + menuWidth > window.innerWidth) left = window.innerWidth - menuWidth - 10;
+  
+  reactionMenu.style.top = `${top}px`;
+  reactionMenu.style.left = `${left}px`;
+  
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+
+async function sendReaction(emoji, messageId = activeLongPressMsgId) {
+  if (!messageId) return;
+  reactionMenu.style.display = 'none';
+
+  try {
+    const msgEl = document.querySelector(`[data-msg-id="${messageId}"] .msg`);
+    if(msgEl) {
+        let badge = msgEl.querySelector('.msg-reaction-badge');
+        if(!badge) {
+            badge = document.createElement('div');
+            badge.className = 'msg-reaction-badge';
+            msgEl.appendChild(badge);
+        }
+        badge.textContent = emoji;
+    }
+
+    await fetch(`/api/messages/${otherId}/reactions/${messageId}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ reaction: emoji })
+    });
+  } catch (e) { console.error(e); }
+}
+
+function createHeartAnimation(element) {
+  const heart = document.createElement('div');
+  heart.textContent = '♥️';
+  heart.style.position = 'absolute';
+  heart.style.left = '50%';
+  heart.style.top = '50%';
+  heart.style.transform = 'translate(-50%, -50%) scale(0)';
+  heart.style.fontSize = '40px';
+  heart.style.transition = 'all 0.4s ease-out';
+  heart.style.zIndex = '100';
+  element.appendChild(heart);
+  
+  requestAnimationFrame(() => {
+    heart.style.transform = 'translate(-50%, -100%) scale(1.5)';
+    heart.style.opacity = '0';
+  });
+  setTimeout(() => heart.remove(), 500);
+}
+
+// --- Audio Preview ---
+function renderComposerPreview(file, type) {
+  filePreviewArea.innerHTML = '';
+  
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'flex:1; display:flex; align-items:center; gap:10px; overflow:hidden;';
+  
+  if (type === 'audio') {
+     const waveContainer = document.createElement('div');
+     waveContainer.id = 'composer-wave';
+     waveContainer.style.flex = '1';
+     
+     const icon = document.createElement('div');
+     icon.innerHTML = '<i class="fas fa-microphone" style="color:#ef4444; font-size:16px;"></i>';
+     
+     const timeDisplay = document.createElement('div');
+     timeDisplay.style.cssText = 'color:#fff; font-size:12px; font-weight:bold; min-width:30px;';
+     timeDisplay.textContent = document.getElementById('rec-timer').textContent || '0:00';
+     
+     wrapper.appendChild(icon);
+     wrapper.appendChild(waveContainer);
+     wrapper.appendChild(timeDisplay);
+     filePreviewArea.appendChild(wrapper);
+
+     const url = URL.createObjectURL(file);
+     setTimeout(() => {
+        if(composerWaveSurfer) composerWaveSurfer.destroy();
+        composerWaveSurfer = WaveSurfer.create({
+            container: '#composer-wave',
+            waveColor: 'rgba(255,255,255,0.4)',
+            progressColor: '#ffffff',
+            cursorColor: 'transparent',
+            barWidth: 2, barRadius: 2, height: 30,
+            url: url
+        });
+     }, 50);
+
+  } else if (type === 'video') {
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      video.className = 'file-thumb';
+      video.muted = true;
+      video.onloadedmetadata = () => video.currentTime = 1; 
+      
+      const info = document.createElement('div');
+      info.className = 'preview-info';
+      info.innerHTML = `<div class="preview-filename">فيديو</div><div class="preview-sub">${(file.size/1024/1024).toFixed(1)} MB</div>`;
+      
+      wrapper.appendChild(video);
+      wrapper.appendChild(info);
+      filePreviewArea.appendChild(wrapper);
+  } else {
+      const img = document.createElement('img');
+      img.className = 'file-thumb';
+      img.src = type === 'image' ? URL.createObjectURL(file) : '';
+      if(type !== 'image') img.style.display = 'none';
+      
+      const info = document.createElement('div');
+      info.className = 'preview-info';
+      info.innerHTML = `<div class="preview-filename">${file.name}</div><div class="preview-sub">${(file.size/1024).toFixed(0)} KB</div>`;
+      
+      if(type==='image') wrapper.appendChild(img);
+      else wrapper.appendChild(document.createElement('div').innerHTML='<i class="fas fa-file text-white fa-2x"></i>');
+      wrapper.appendChild(info);
+      filePreviewArea.appendChild(wrapper);
+  }
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'close-btn';
+  closeBtn.innerHTML = '<i class="fas fa-times" style="font-size:12px"></i>';
+  closeBtn.onclick = () => {
+    uploadedFile = null;
+    mediaInput.value = '';
+    filePreviewArea.style.display = 'none';
+    if(composerWaveSurfer) { composerWaveSurfer.destroy(); composerWaveSurfer = null; }
+    toggleSendButton();
+  };
+  
+  filePreviewArea.appendChild(closeBtn);
+  filePreviewArea.style.display = 'flex';
+}
+
+// --- Attachments ---
+attachBtn.onclick = () => mediaInput.click();
+mediaInput.onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  uploadedFile = file;
+  let type = 'file';
+  if(file.type.startsWith('image')) type = 'image';
+  else if(file.type.startsWith('video')) type = 'video';
+  else if(file.type.startsWith('audio')) type = 'audio';
+  
+  renderComposerPreview(file, type);
+  toggleSendButton();
 };
-mediaRecorder.onstop = async () => {
-stream.getTracks().forEach(track => track.stop());
-recordingIndicator.style.display = 'none';
-clearInterval(recordingInterval);
-if (audioChunks.length > 0) {
-sendMessage();
+
+// --- Recording ---
+micBtn.onclick = () => { if (isRecording) stopRecording(); else startRecording(); };
+document.getElementById('cancel-rec-btn').onclick = cancelRecording;
+
+function startRecording() {
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.start();
+    isRecording = true;
+    
+    msgInput.style.display = 'none';
+    micBtn.style.display = 'none';
+    attachBtn.style.display = 'none';
+    recordingUi.style.display = 'flex';
+    
+    let sec = 0;
+    recTimerInterval = setInterval(() => {
+      sec++;
+      document.getElementById('rec-timer').textContent = fmtTime(sec);
+    }, 1000);
+
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+       const blob = new Blob(audioChunks, { type: 'audio/webm' });
+       uploadedFile = new File([blob], "voice.webm", { type: 'audio/webm' });
+       resetRecordingUI();
+       renderComposerPreview(uploadedFile, 'audio'); 
+       toggleSendButton();
+    };
+  }).catch(e => alert('Mic error'));
 }
+
+function stopRecording() { if(mediaRecorder) mediaRecorder.stop(); }
+function cancelRecording() {
+  if(mediaRecorder) { mediaRecorder.stop(); uploadedFile = null; audioChunks = []; }
+  resetRecordingUI();
+}
+function resetRecordingUI() {
+  clearInterval(recTimerInterval);
+  isRecording = false;
+  document.getElementById('rec-timer').textContent = '0:00';
+  recordingUi.style.display = 'none';
+  msgInput.style.display = 'block';
+  micBtn.style.display = 'flex';
+  attachBtn.style.display = 'flex';
+}
+
+function toggleSendButton() {
+  const hasContent = msgInput.value.trim().length > 0 || uploadedFile;
+  sendBtn.style.display = hasContent ? 'flex' : 'none';
+  micBtn.style.display = hasContent ? 'none' : 'flex';
+}
+
+// --- Audio Player Logic (FIXED: High Contrast White) ---
+function initWaveform(containerId, url, isMe) {
+  const container = document.getElementById(containerId);
+  if (!container || audioWaveSurfers[containerId]) return;
+
+  try {
+      const ws = WaveSurfer.create({
+        container: container,
+        // لون الموجة غير المشغلة (أبيض شفاف ليكون واضحاً على الأسود)
+        waveColor: 'rgba(255, 255, 255, 0.4)', 
+        // لون الموجة المشغلة (أبيض ناصع)
+        progressColor: '#ffffff', 
+        // لون المؤشر
+        cursorColor: '#ffffff',
+        cursorWidth: 2,
+        // سماكة الخطوط
+        barWidth: 3, 
+        barRadius: 3, 
+        barGap: 3,
+        height: 34,
+        responsive: true,
+        url: url
+      });
+      
+      ws.on('ready', () => {
+        const parent = container.parentElement;
+        if(parent) {
+            const timeEl = parent.querySelector('.audio-time');
+            if(timeEl) timeEl.textContent = fmtTime(ws.getDuration());
+        }
+      });
+      
+      ws.on('finish', () => {
+         const btn = container.parentElement.querySelector('.audio-play-btn');
+         if(btn) btn.innerHTML = '<i class="fas fa-play" style="font-size:14px"></i>';
+         ws.seekTo(0);
+      });
+
+      audioWaveSurfers[containerId] = ws;
+  } catch(err) {
+      console.error("Error creating WaveSurfer", err);
+  }
+}
+
+function playAudio(url, id, btn) {
+  const ws = audioWaveSurfers[id];
+  if(!ws) return;
+  ws.playPause();
+  if (ws.isPlaying()) {
+      btn.innerHTML = '<i class="fas fa-pause" style="font-size:14px"></i>';
+  } else {
+      btn.innerHTML = '<i class="fas fa-play" style="font-size:14px"></i>';
+  }
+  
+  ws.on('play', () => btn.innerHTML = '<i class="fas fa-pause" style="font-size:14px"></i>');
+  ws.on('pause', () => btn.innerHTML = '<i class="fas fa-play" style="font-size:14px"></i>');
+}
+
+// --- Helpers ---
+function fmtTime(s) {
+  const m = Math.floor(s/60);
+  const sc = Math.floor(s%60);
+  return `${m}:${sc<10?'0':''}${sc}`;
+}
+function getLocalizedType(content) {
+  if (!content) return '';
+  if (content.includes('صورة') || content.includes('فيديو')) return content;
+  return content;
+}
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// --- Sending ---
+sendBtn.onclick = async () => {
+  if(sendBtn.disabled) return;
+  const content = msgInput.value.trim();
+  if(!content && !uploadedFile) return;
+
+  // Show Spinner
+  sendBtn.disabled = true;
+  const originalIcon = sendBtn.innerHTML;
+  sendBtn.innerHTML = '<div class="sending-spinner"></div>';
+
+  const fd = new FormData();
+  fd.append('other_id', otherId);
+  if(content) fd.append('content', content);
+  if(uploadedFile) fd.append('media', uploadedFile);
+  if(replyData) {
+    fd.append('replied_to_id', replyData.id);
+    fd.append('replied_to_sender', replyData.sender);
+    fd.append('replied_to_content', replyData.content);
+  }
+
+  try {
+    const res = await fetch('/api/messages/send', { method:'POST', body:fd });
+    const d = await res.json();
+    if(d.ok) {
+        // Immediate update handled by polling/server
+      scrollToBottom();
+      msgInput.value = '';
+      msgInput.style.height = '38px';
+      
+      uploadedFile = null;
+      filePreviewArea.style.display = 'none';
+      if(composerWaveSurfer) { composerWaveSurfer.destroy(); composerWaveSurfer = null; }
+      
+      replyData = null;
+      replyContainer.style.display = 'none';
+      
+      toggleSendButton();
+    }
+  } catch(e) { alert('Error sending'); }
+  
+  sendBtn.innerHTML = originalIcon;
+  sendBtn.disabled = false;
 };
-mediaRecorder.start();
-recordingStartTime = Date.now();
-recordingInterval = setInterval(updateRecordingTime, 1000);
-recordingIndicator.style.display = 'flex';
-} catch (err) {
-console.error('Error starting recording:', err);
-alert('لا يمكن الوصول إلى الميكروفون. يرجى التحقق من الأذونات.');
+
+// --- Swipe Logic ---
+function enableSwipeToReply(container, contentEl, iconEl, msg) {
+  let startX = 0, currentX = 0, isDragging = false;
+  contentEl.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isDragging=true; contentEl.style.transition='none'; }, {passive:true});
+  contentEl.addEventListener('touchmove', e => {
+    if(!isDragging) return;
+    const diff = e.touches[0].clientX - startX;
+    const isMe = msg.senderId === myId;
+    let allowed = (!isMe && diff < 0) || (isMe && diff > 0);
+    if(allowed && Math.abs(diff) < 150) {
+      currentX = diff;
+      contentEl.style.transform = `translateX(${diff}px)`;
+      iconEl.style.transform = `translateY(-50%) scale(${Math.min(Math.abs(diff)/60, 1)})`;
+    }
+  }, {passive:true});
+  contentEl.addEventListener('touchend', () => {
+    isDragging = false;
+    contentEl.style.transition = 'transform 0.3s';
+    contentEl.style.transform = 'translateX(0)';
+    iconEl.style.transform = 'translateY(-50%) scale(0)';
+    if(Math.abs(currentX) > 60) triggerReply(msg);
+    currentX = 0;
+  });
 }
+
+function triggerReply(msg) {
+  const isMe = msg.senderId === myId;
+  const senderName = isMe ? 'أنت' : document.getElementById('header-name').textContent;
+  let preview = msg.content;
+  if(!preview && msg.media) {
+     if(msg.media.type.startsWith('image')) preview = '📷 صورة';
+     else if(msg.media.type.startsWith('video')) preview = '🎥 فيديو';
+     else if(msg.media.type.startsWith('audio') || msg.media.url.endsWith('.webm')) preview = '🎤 تسجيل صوتي';
+  }
+  replyData = { id: msg.messageId, sender: senderName, content: preview };
+  document.getElementById('reply-to-name').textContent = senderName;
+  document.getElementById('reply-to-text').textContent = preview;
+  replyContainer.style.display = 'flex';
+  msgInput.focus();
 }
-function stopRecording() {
-if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-mediaRecorder.stop();
-}
-}
-function updateRecordingTime() {
-const seconds = Math.floor((Date.now() - recordingStartTime) / 1000);
-const minutes = Math.floor(seconds / 60);
-const remainingSeconds = seconds % 60;
-recordingTime.textContent = `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-}
-mediaUploadInput.addEventListener('change', (event) => {
-const file = event.target.files[0];
-if (file) {
-uploadedFile = file;
-audioChunks = [];
-const reader = new FileReader();
-reader.onload = (e) => {
-filePreview.innerHTML = '';
-let previewElement;
-const isWebmAudio = file.type.startsWith('audio/') || file.type === 'video/webm' || file.name.endsWith('.webm');
-if (file.type.startsWith('image/')) {
-previewElement = document.createElement('img');
-previewElement.src = e.target.result;
-previewElement.alt = "صورة معاينة";
-} else if (isWebmAudio) {
-previewElement = document.createElement('audio');
-previewElement.src = e.target.result;
-previewElement.controls = true;
-} else if (file.type.startsWith('video/')) {
-previewElement = document.createElement('video');
-previewElement.src = e.target.result;
-previewElement.controls = true;
-} else {
-previewElement = document.createElement('span');
-previewElement.textContent = file.name;
-}
-filePreview.appendChild(previewElement);
-filePreview.style.display = 'flex';
-};
-reader.readAsDataURL(file);
-} else {
-uploadedFile = null;
-filePreview.style.display = 'none';
-filePreview.innerHTML = '';
-}
-});
-sendForm.addEventListener('submit', e => {
-e.preventDefault();
-sendMessage();
-});
-msgInput.addEventListener('keydown', e => {
-if (e.key === 'Enter' && !e.shiftKey) {
-e.preventDefault();
-sendMessage();
-}
-});
-voiceBtn.addEventListener('mousedown', startRecording);
-voiceBtn.addEventListener('mouseup', stopRecording);
-voiceBtn.addEventListener('mouseleave', stopRecording);
-voiceBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
-voiceBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
-(async function init() {
-await fetchOtherProfile();
-await markRead();
-await fetchMessages();
-scrollToBottom();
-setInterval(async () => {
-await fetchMessages();
-await markRead();
-}, 3000);
-})();
+document.getElementById('cancel-reply').onclick = () => { replyData=null; replyContainer.style.display='none'; };
+
+init();
 </script>
 </body>
 </html>

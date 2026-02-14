@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الإعدادات - Aite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: radial-gradient(circle at top, #1a1a1a, #000000);
+            color: #e4e6eb;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            transition: all 0.3s ease;
+            padding-left: 45px !important;
+            padding-right: 12px !important;
+        }
+
+        .glass-input:focus {
+            border-color: rgba(255, 255, 255, 0.4) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        .glass-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+        }
+        .modal-backdrop.open { display: flex; }
+
+        .modal-glass {
+            width: 94%;
+            max-width: 420px;
+            border-radius: 14px;
+            padding: 18px;
+            background: rgba(8, 10, 14, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+            color: #e6eefb;
+        }
+
+        .eye-btn {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: #cbd5e1;
+            cursor: pointer;
+            padding: 4px;
+            z-index: 10;
+        }
+
+        .input-wrap { position: relative; }
+        .inline-error { color: #fb7185; font-size: 0.9rem; margin-top: 8px; }
+        button[disabled] { opacity: 0.6; cursor: not-allowed; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center pt-6 px-4 pb-20">
+
+    <div class="w-full max-w-md flex items-center justify-between mb-8">
+        <a href="/chat_list" class="text-gray-400 hover:text-white text-xl transition-transform hover:-translate-x-1">
+            <i class="fas fa-arrow-right"></i>
+        </a>
+        <h1 class="text-2xl font-bold tracking-wide">الإعدادات</h1>
+        <div class="w-5"></div>
+    </div>
+
+    <div class="w-full max-w-md space-y-6">
+        <div class="glass-panel p-5 rounded-2xl">
+            <h2 class="text-sm font-bold mb-4 text-gray-400 uppercase tracking-widest">الحساب</h2>
+            <a href="/edit_profile" class="flex items-center justify-between w-full p-4 glass-button rounded-xl">
+                <span class="flex items-center text-gray-200">
+                    <i class="fas fa-user-edit ml-3 text-gray-400"></i> تعديل الملف الشخصي
+                </span>
+                <i class="fas fa-chevron-left text-gray-500 text-xs"></i>
+            </a>
+        </div>
+
+        <div class="glass-panel p-5 rounded-2xl">
+            <h2 class="text-sm font-bold mb-4 text-gray-400 uppercase tracking-widest">الأمان</h2>
+            <form id="changePasswordForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-2 mr-1">كلمة المرور الجديدة</label>
+                    <div class="input-wrap">
+                        <input type="password" id="newPassword" required class="glass-input w-full rounded-xl p-3 text-white focus:outline-none" placeholder="••••••••">
+                        <button type="button" class="eye-btn" onclick="toggleEye('newPassword', this)"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-2 mr-1">تأكيد كلمة المرور</label>
+                    <div class="input-wrap">
+                        <input type="password" id="confirmPassword" required class="glass-input w-full rounded-xl p-3 text-white focus:outline-none" placeholder="••••••••">
+                        <button type="button" class="eye-btn" onclick="toggleEye('confirmPassword', this)"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <button type="submit" id="changePassBtn" class="w-full glass-button text-white font-bold py-3 px-4 rounded-xl mt-2">تحديث كلمة المرور</button>
+            </form>
+            <p id="msg" class="text-center text-sm mt-4 hidden"></p>
+        </div>
+
+        <button onclick="openLogoutModal()" class="w-full border border-red-900/50 bg-red-950/10 text-red-500 hover:bg-red-600 hover:text-white font-bold py-4 px-4 rounded-2xl transition-all">تسجيل الخروج</button>
+        <button onclick="openDeleteModal()" class="w-full border border-gray-700 bg-transparent text-white font-semibold py-4 px-4 rounded-2xl transition-all">حذف الحساب</button>
+    </div>
+
+    <div id="logoutModal" class="modal-backdrop" onclick="closeLogoutModal()"><div class="modal-glass" onclick="event.stopPropagation()">
+        <h3 class="font-bold text-lg">تأكيد الخروج</h3>
+        <p class="text-gray-400 text-sm mt-2">هل أنت متأكد من رغبتك في تسجيل الخروج؟</p>
+        <div class="mt-4 flex gap-3">
+            <button onclick="closeLogoutModal()" class="flex-1 glass-button py-2 rounded-lg">إلغاء</button>
+            <button onclick="location.href='/logout'" class="flex-1 bg-red-600 text-white py-2 rounded-lg">خروج</button>
+        </div>
+    </div></div>
+
+    <div id="deleteModal" class="modal-backdrop" onclick="closeDeleteModal()"><div class="modal-glass" onclick="event.stopPropagation()">
+        <h3 class="font-bold text-lg text-red-500">حذف الحساب نهائياً</h3>
+        <p class="text-gray-400 text-sm mt-2">سيتم حذف بياناتك من السيرفر وإزالته من هذا الجهاز. أدخل كلمة المرور للتأكيد.</p>
+        <form id="deleteAccountForm" class="mt-4">
+            <div class="input-wrap">
+                <input type="password" id="deletePasswordInput" required class="glass-input w-full rounded-xl p-3 text-white focus:outline-none" placeholder="كلمة المرور">
+                <button type="button" class="eye-btn" onclick="toggleEye('deletePasswordInput', this)"><i class="fas fa-eye"></i></button>
+            </div>
+            <div id="deleteError" class="inline-error hidden"></div>
+            <div class="mt-4 flex gap-3">
+                <button type="button" onclick="closeDeleteModal()" class="flex-1 glass-button py-2 rounded-lg">إلغاء</button>
+                <button id="confirmDeleteAccountBtn" type="submit" class="flex-1 bg-red-700 text-white py-2 rounded-lg">حذف الحساب</button>
+            </div>
+        </form>
+    </div></div>
+
+    <script>
+        // إعدادات التبديل للعين (كلمة المرور)
+        function toggleEye(id, btn) {
+            const el = document.getElementById(id);
+            const icon = btn.querySelector('i');
+            if (el.type === 'password') { el.type = 'text'; icon.classList.replace('fa-eye', 'fa-eye-slash'); }
+            else { el.type = 'password'; icon.classList.replace('fa-eye-slash', 'fa-eye'); }
+        }
+
+        // دوال فتح وإغلاق النوافذ المنبثقة
+        function openLogoutModal() { document.getElementById('logoutModal').classList.add('open'); }
+        function closeLogoutModal() { document.getElementById('logoutModal').classList.remove('open'); }
+        function openDeleteModal() { document.getElementById('deleteModal').classList.add('open'); }
+        function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('open'); }
+
+        // منطق تغيير كلمة المرور
+        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            const msgEl = document.getElementById('msg');
+            const btn = document.getElementById('changePassBtn');
+
+            msgEl.classList.add('hidden');
+            msgEl.className = 'text-center text-sm mt-4 hidden'; // reset classes
+
+            if (newPass !== confirmPass) {
+                msgEl.textContent = 'كلمات المرور غير متطابقة.';
+                msgEl.classList.add('text-red-500');
+                msgEl.classList.remove('hidden');
+                return;
+            }
+
+            if (newPass.length < 6) {
+                msgEl.textContent = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.';
+                msgEl.classList.add('text-red-500');
+                msgEl.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'جارٍ التحديث...';
+
+            try {
+                const res = await fetch('/api/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newPassword: newPass })
+                });
+                const data = await res.json();
+
+                if (data.ok) {
+                    msgEl.textContent = 'تم تغيير كلمة المرور بنجاح.';
+                    msgEl.className = 'text-center text-sm mt-4 text-green-400';
+                    document.getElementById('changePasswordForm').reset();
+                } else {
+                    msgEl.textContent = data.error || 'حدث خطأ ما.';
+                    msgEl.className = 'text-center text-sm mt-4 text-red-500';
+                }
+            } catch (err) {
+                msgEl.textContent = 'فشل الاتصال بالسيرفر.';
+                msgEl.className = 'text-center text-sm mt-4 text-red-500';
+            } finally {
+                msgEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'تحديث كلمة المرور';
+            }
+        });
+
+        // منطق حذف الحساب (تم الإصلاح ليتوافق مع LocalStorage والتوجيه)
+        document.getElementById('deleteAccountForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pwd = document.getElementById('deletePasswordInput').value;
+            const errEl = document.getElementById('deleteError');
+            const btn = document.getElementById('confirmDeleteAccountBtn');
+
+            errEl.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الحذف...';
+
+            try {
+                const res = await fetch('/api/account/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pwd })
+                });
+                const data = await res.json();
+
+                if (data.ok) {
+                    // مفتاح التخزين الصحيح كما في accounts.html
+                    const STORAGE_KEY = 'aite_accounts_secure_v2';
+                    
+                    // إزالة الحساب من LocalStorage إذا أرجع السيرفر اسم المستخدم
+                    if (data.deletedUsername) {
+                        try {
+                            let accounts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                            accounts = accounts.filter(acc => acc.username !== data.deletedUsername);
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+                        } catch (storageErr) {
+                            console.error('LocalStorage cleanup error', storageErr);
+                        }
+                    }
+
+                    // التوجيه لصفحة الحسابات
+                    window.location.href = '/accounts';
+                } else {
+                    errEl.textContent = data.error || 'فشل الحذف. تأكد من كلمة المرور.';
+                    errEl.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.textContent = 'حذف الحساب';
+                }
+            } catch (err) {
+                console.error(err);
+                errEl.textContent = 'خطأ في الاتصال بالسيرفر.';
+                errEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'حذف الحساب';
+            }
+        });
+    </script>
+</body>
+</html>

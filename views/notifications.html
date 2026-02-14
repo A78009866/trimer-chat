@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aite - الإشعارات</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { background: #000; color: #e4e6eb; font-family: Inter, system-ui, sans-serif; }
+    .glass-navbar { background-color: rgba(30,30,30,0.5); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .notification-card { background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.04); border-radius: 12px; padding:12px; display:flex; gap:12px; align-items:center; cursor:pointer; position:relative; }
+    .notification-card.unread { border-left: 4px solid #007AFF; }
+    .notif-avatar { width:48px; height:48px; border-radius:50%; object-fit:cover; border:1px solid rgba(255,255,255,0.06); flex-shrink:0; }
+    .badge { background:#ef4444; color:white; font-size:12px; padding:4px 8px; border-radius:999px; }
+    .empty { text-align:center; color:#94a3b8; padding:40px 0; }
+    .action-small { padding:6px 8px; font-size:12px; border-radius:8px; display:inline-flex; gap:6px; align-items:center; justify-content:center; background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); color:#e6eefb; cursor:pointer; }
+    .notif-card-content { flex:1; min-width:0; }
+    .notif-title { font-size:14px; color:#e6eefb; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .notif-time { font-size:12px; color:#9fb3c8; }
+    .notif-target { margin-top:6px; color:#9fb3c8; font-size:13px; }
+    .actions-dropdown {
+      position: absolute;
+      top: 48px;
+      left: 12px;
+      background: rgba(20,20,20,0.95);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+      z-index: 1200;
+      min-width: 160px;
+    }
+    .actions-dropdown button { width: 100%; display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:8px 10px; border-radius:8px; background:transparent; border:none; color:#e6eefb; cursor:pointer; text-align:right; }
+    .actions-dropdown button:hover { background: rgba(255,255,255,0.02); }
+    .top-action-btn {
+      width:36px; height:36px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center;
+      background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); color:#e6eefb; cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <header class="glass-navbar sticky top-0 z-50 p-3">
+    <nav class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="/chat_list" class="text-gray-400 hover:text-white p-2"><i class="fas fa-arrow-right text-2xl"></i></a>
+      </div>
+
+      <div class="text-center">
+        <h1 class="text-xl font-bold">الإشعارات</h1>
+      </div>
+
+      <div style="width:40px; display:flex; gap:8px; align-items:center; justify-content:flex-end; position:relative;">
+        <button id="actionsToggleBtn" class="top-action-btn" title="خيارات الإشعارات" aria-haspopup="true" aria-expanded="false">
+          <i class="fas fa-ellipsis-v"></i>
+        </button>
+
+        <div id="actionsDropdown" class="actions-dropdown hidden" role="menu" aria-label="خيارات الإشعارات">
+          <button id="markAllReadBtn" class="action-small" title="تعيين الكل كمقروء">
+            <span style="direction:ltr;"><i class="fas fa-check-double" style="font-size:13px"></i></span>
+            <span>تعيين الكل كمقروء</span>
+          </button>
+          <button id="clearAllBtn" class="action-small" style="margin-top:6px;" title="حذف كل الإشعارات">
+            <span style="direction:ltr;"><i class="fas fa-trash" style="font-size:13px;color:#f87171"></i></span>
+            <span>حذف الكل</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-4 pb-36">
+    <div id="notifContainer" class="space-y-3">
+      <div class="text-center text-gray-400 p-6"><i class="fas fa-spinner fa-spin"></i> جاري تحميل الإشعارات...</div>
+    </div>
+  </main>
+<script>
+  const DEFAULT_AVATAR = 'https://res.cloudinary.com/duixjs8az/image/upload/v1766905033/post_media/1766905033352-default_profile.png';
+
+  // Fetch and render notifications
+  async function fetchNotifications() {
+    try {
+      const res = await fetch('/api/notifications', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('failed');
+      const data = await res.json();
+      renderNotifications(data.notifications);
+      
+      // اختياري: عند فتح الصفحة، نقوم بتصفير العداد في السيرفر أيضاً للتأكيد
+      fetch('/api/notifications/mark_read', { 
+          method: 'POST', 
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({}) 
+      }).catch(()=>{});
+
+    } catch (e) {
+      document.getElementById('notifContainer').innerHTML = '<div class="empty">فشل في جلب الإشعارات.</div>';
+      console.error(e);
+    }
+  }
+
+  function renderNotifications(notifs) {
+    const container = document.getElementById('notifContainer');
+    if (!notifs || notifs.length === 0) {
+      container.innerHTML = '<div class="empty">لا توجد إشعارات حالياً.</div>';
+      return;
+    }
+
+    container.innerHTML = notifs.map(n => {
+      let title = '';
+      let targetHint = '';
+      
+      // ضمان وجود صورة افتراضية إذا كانت الصورة القادمة فارغة
+      const fromPic = n.from_profile_picture_url || DEFAULT_AVATAR;
+      const fromName = escapeHtml(n.from_username || 'مستخدم');
+      
+      // معالجة النصوص الطويلة
+      let contentSnippet = n.commentContent || n.replyContent || n.preview || '';
+      if(contentSnippet.length > 60) contentSnippet = contentSnippet.substring(0, 60) + '...';
+      const snippet = escapeHtml(contentSnippet);
+
+      // المتغيرات
+      const postId = n.postId || '';
+      const reelId = n.reelId || '';
+      const familyId = n.familyId || ''; // مهم لإشعارات العائلة
+      const commentId = n.commentId || '';
+      const replyId = n.replyId || '';
+
+      // تحديد نوع الإشعار بدقة
+      switch (n.type) {
+        // --- المنشورات العادية ---
+        case 'post_like':
+          title = `<strong>${fromName}</strong> أعجب بمنشورك`;
+          targetHint = 'عرض المنشور';
+          break;
+        case 'post_comment':
+          title = `<strong>${fromName}</strong> علّق: "${snippet}"`;
+          targetHint = 'عرض التعليق';
+          break;
+        case 'comment_reply': // قد يكون للمنشور أو الريل
+          title = `<strong>${fromName}</strong> ردّ على تعليقك: "${snippet}"`;
+          targetHint = 'عرض الرد';
+          break;
+        case 'comment_like':
+          title = `<strong>${fromName}</strong> أعجب بتعليقك`;
+          targetHint = 'عرض التعليق';
+          break;
+
+        // --- الريلز (Reels) ---
+        case 'reel_like':
+          title = `<strong>${fromName}</strong> أعجب بالريل الخاص بك`;
+          targetHint = 'مشاهدة الريل';
+          break;
+        case 'reel_comment':
+          title = `<strong>${fromName}</strong> علّق على الريل: "${snippet}"`;
+          targetHint = 'مشاهدة التعليق';
+          break;
+
+        // --- العائلة (Family) - كانت مفقودة سابقاً ---
+        case 'family_post_like':
+          title = `<strong>${fromName}</strong> أعجب بمنشورك في العائلة`;
+          targetHint = 'فتح العائلة';
+          break;
+        case 'family_post_comment':
+          title = `<strong>${fromName}</strong> علّق في العائلة: "${snippet}"`;
+          targetHint = 'فتح العائلة';
+          break;
+        case 'family_comment_like':
+          title = `<strong>${fromName}</strong> أعجب بتعليقك العائلي`;
+          targetHint = 'فتح العائلة';
+          break;
+        case 'family_comment_reply':
+          title = `<strong>${fromName}</strong> رد عليك في العائلة: "${snippet}"`;
+          targetHint = 'فتح العائلة';
+          break;
+
+        // --- الأصدقاء والرسائل ---
+        case 'friend_request':
+          title = `<strong>${fromName}</strong> أرسل لك طلب صداقة`;
+          targetHint = 'عرض الطلبات';
+          break;
+        case 'friend_accept':
+          title = `<strong>${fromName}</strong> أصبح صديقك الآن`;
+          targetHint = 'زيارة الملف الشخصي';
+          break;
+        case 'message':
+          title = `<strong>${fromName}</strong> أرسل لك رسالة`;
+          targetHint = 'فتح المحادثة';
+          break;
+        case 'message_reaction':
+           title = `<strong>${fromName}</strong> تفاعل مع رسالتك`;
+           targetHint = 'فتح المحادثة';
+           break;
+
+        // --- الافتراضي ---
+        default:
+          title = `<strong>${fromName}</strong> إشعار جديد`;
+          targetHint = 'عرض';
+      }
+
+      const time = new Date(n.timestamp || Date.now()).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+
+      // وضع البيانات في attributes لاستخدامها عند الضغط
+      const dataAttrs = [
+        `data-id="${escapeHtml(n.id || '')}"`,
+        `data-type="${escapeHtml(n.type || '')}"`,
+        `data-post-id="${escapeHtml(postId)}"`,
+        `data-reel-id="${escapeHtml(reelId)}"`,
+        `data-family-id="${escapeHtml(familyId)}"`, 
+        `data-from="${escapeHtml(n.from_user_id || '')}"`,
+        `data-comment-id="${escapeHtml(commentId)}"`
+      ].join(' ');
+
+      return `
+        <div class="notification-card ${n.is_read ? '' : 'unread'}" ${dataAttrs}>
+          <img src="${escapeHtml(fromPic)}" class="notif-avatar" alt="" onerror="this.src='${DEFAULT_AVATAR}'">
+          <div class="notif-card-content">
+            <div style="display:flex; justify-content:space-between; gap:8px; align-items:center">
+              <div class="notif-title">${title}</div>
+              <div class="notif-time">${time}</div>
+            </div>
+            <div class="notif-target">${targetHint}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    if (s === null || typeof s === 'undefined') return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // معالجة الضغط على الإشعار (Navigation Fix)
+  document.addEventListener('click', async (ev) => {
+    // تجاهل الضغطات داخل القوائم المنسدلة
+    if (ev.target.closest('#actionsDropdown') || ev.target.closest('#actionsToggleBtn')) return;
+
+    const card = ev.target.closest('.notification-card');
+    if (card) {
+      const id = card.dataset.id;
+      const type = card.dataset.type;
+      const postId = card.dataset.postId;
+      const reelId = card.dataset.reelId;
+      const familyId = card.dataset.familyId;
+      const fromUser = card.dataset.from;
+
+      // 1. تعليم الإشعار كمقروء في الخلفية
+      if (id) {
+        fetch('/api/notifications/mark_read', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        }).catch(()=>{});
+        card.classList.remove('unread');
+      }
+
+      // 2. منطق التوجيه الصحيح
+      try {
+        // -- منشورات عامة --
+        if (['post_like', 'post_comment', 'comment_like', 'comment_reply'].includes(type)) {
+            // الأفضل التوجيه لصفحة المنشور المفردة بدلاً من البحث عنه في القائمة
+            if (postId) {
+                // إذا كان تعليق، يمكننا تمرير معرف التعليق لتمييزه (اختياري)
+                window.location.href = `/post?id=${encodeURIComponent(postId)}`;
+            } else if (reelId) {
+                // حالة خاصة: رد على تعليق قد يكون في ريل
+                window.location.href = `/reels?id=${encodeURIComponent(reelId)}`;
+            } else if (familyId) {
+                 window.location.href = `/family/${encodeURIComponent(familyId)}`;
+            } else {
+                window.location.href = '/chat_list';
+            }
+            return;
+        }
+
+        // -- ريلز --
+        if (['reel_like', 'reel_comment'].includes(type)) {
+            if (reelId) {
+                window.location.href = `/reels?id=${encodeURIComponent(reelId)}`;
+            } else {
+                window.location.href = '/reels';
+            }
+            return;
+        }
+
+        // -- عائلة --
+        if (type.startsWith('family_')) {
+            if (familyId) {
+                window.location.href = `/family/${encodeURIComponent(familyId)}`;
+            } else {
+                window.location.href = '/chat_list'; // أو صفحة العائلات
+            }
+            return;
+        }
+
+        // -- طلبات صداقة --
+        if (type === 'friend_request') {
+            window.location.href = '/users_list'; // أو all_users حسب تصميمك
+            return;
+        }
+        if (type === 'friend_accept') {
+            if (fromUser) window.location.href = `/profile?userId=${encodeURIComponent(fromUser)}`;
+            else window.location.href = '/users_list';
+            return;
+        }
+
+        // -- رسائل --
+        if (type === 'message' || type === 'message_reaction') {
+            if (fromUser) window.location.href = `/chat?contactId=${encodeURIComponent(fromUser)}`;
+            else window.location.href = '/chat_list';
+            return;
+        }
+
+        // افتراضي
+        window.location.href = '/chat_list';
+
+      } catch (e) {
+        console.error('Navigation error', e);
+        window.location.href = '/chat_list';
+      }
+    }
+  });
+
+  // SSE: تحديث القائمة عند وصول إشعار جديد
+  if (window.EventSource) {
+    const es = new EventSource('/api/notifications/stream', { withCredentials: true });
+    es.addEventListener('notifications', (e) => {
+      // لا نقوم بإعادة الرسم الكامل هنا لتجنب وميض الشاشة إذا كان المستخدم يتصفح
+      // لكن يمكننا تحديث الأرقام أو جلب البيانات إذا كانت القائمة فارغة
+      const container = document.getElementById('notifContainer');
+      if (container.querySelector('.empty')) {
+          fetchNotifications();
+      }
+    });
+  }
+
+  // --- باقي أكواد القوائم (Dropdown) كما هي ---
+  const actionsToggleBtn = document.getElementById('actionsToggleBtn');
+  const actionsDropdown = document.getElementById('actionsDropdown');
+
+  actionsToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    actionsDropdown.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#actionsDropdown') && !e.target.closest('#actionsToggleBtn')) {
+      actionsDropdown.classList.add('hidden');
+    }
+  });
+
+  document.getElementById('markAllReadBtn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    actionsDropdown.classList.add('hidden');
+    try {
+      await fetch('/api/notifications/mark_read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}) 
+      });
+      // تحديث الواجهة (إزالة الكلاس unread)
+      document.querySelectorAll('.notification-card.unread').forEach(el => el.classList.remove('unread'));
+    } catch (err) { alert('فشل الإجراء'); }
+  });
+
+  document.getElementById('clearAllBtn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    actionsDropdown.classList.add('hidden');
+    if (!confirm('حذف كل الإشعارات؟')) return;
+    try {
+      await fetch('/api/notifications', { method: 'DELETE', credentials: 'same-origin' });
+      fetchNotifications();
+    } catch (err) { alert('فشل الحذف'); }
+  });
+
+  // التحميل الأولي
+  fetchNotifications();
+</script>
+
+</body>
+</html>

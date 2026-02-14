@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>إنشاء عائلة</title>
+  <style>
+    :root{
+      --bg:#000;
+      --glass: rgba(20,20,20,0.6);
+      --border: rgba(255,255,255,0.06);
+      --muted:#bfc6cc;
+      --accent:#e6eefb;
+      --black-overlay: rgba(0,0,0,0.95);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--accent);font-family:system-ui,Inter,Arial;display:flex;align-items:center;justify-content:center;padding:20px}
+    .container{width:100%;max-width:520px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 12px 40px rgba(0,0,0,0.6)}
+    .pad{padding:18px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+    .title{font-weight:700}
+    
+    /* تعديل زر العودة ليصبح دائرياً */
+    .home-btn{
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--glass);
+      color: var(--accent);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .home-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: scale(1.05);
+    }
+
+    .preview{
+      height:220px;border-radius:10px;background:linear-gradient(180deg,#071018,#0b0b0b);display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--border);cursor:pointer;
+      position:relative;
+    }
+    .preview img{width:100%;height:100%;object-fit:cover;display:block;filter:contrast(.95) brightness(.9)}
+    .hint{position:absolute;bottom:10px;left:12px;font-size:13px;color:var(--muted);background:rgba(0,0,0,0.25);padding:6px 8px;border-radius:8px}
+    form.row{display:flex;gap:10px;align-items:center;margin-top:14px}
+    input[type="text"]{flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--accent);outline:none;font-size:15px}
+    .btn{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--glass);color:var(--accent);cursor:pointer;font-weight:700}
+    .note{font-size:13px;color:var(--muted);margin-top:10px}
+    /* result overlay: fully black background with centered card */
+    .overlay{position:fixed;inset:0;background:var(--black-overlay);display:none;align-items:center;justify-content:center;z-index:60}
+    .card{width:100%;max-width:480px;background:#070707;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;border:1px solid rgba(255,255,255,0.03)}
+    .thumb{height:160px;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:#0b0b0b}
+    .thumb img{width:100%;height:100%;object-fit:cover}
+    .fam-name{font-weight:800;font-size:20px;color:var(--accent)}
+    .key{margin-top:6px;padding:10px;border-radius:8px;background:#000;border:1px dashed rgba(255,255,255,0.06);font-family:monospace;color:var(--accent);text-align:center}
+    .actions{display:flex;gap:10px;justify-content:center;margin-top:8px}
+    .small-btn{padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--accent);cursor:pointer;font-weight:700}
+    .small-btn.primary{background:#0b0b0b;border:1px solid rgba(255,255,255,0.06)}
+    .center{text-align:center}
+    @media (max-width:520px){ .thumb{height:140px} }
+  </style>
+</head>
+<body>
+  <main class="container" aria-labelledby="pageTitle">
+    <div class="pad">
+      <div class="top">
+        <div>
+          <div id="pageTitle" class="title">إنشاء عائلة</div>
+          <div class="note">اختر صورة، أدخل الاسم، ثم اضغط إنشاء</div>
+        </div>
+        <a href="/chat_list" class="home-btn" title="العودة للرئيسية">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5m7 7l-7-7 7-7"/>
+          </svg>
+        </a>
+      </div>
+
+      <label for="fileInput" class="preview" id="previewArea" title="انقر لاختيار صورة">
+        <img id="previewImg" src="https://plus.unsplash.com/premium_vector-1682298522309-88e4dc1ccc4d?q=80&w=1125&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="معاينة">
+        <div class="hint">انقر لاختيار صورة أو اسحبها إلى هنا</div>
+      </label>
+
+      <form id="form" class="row" onsubmit="return handleSubmit(event)">
+        <input id="name" name="name" type="text" placeholder="اسم العائلة" required autocomplete="off" />
+        <button class="btn" id="createBtn" type="submit">إنشاء</button>
+      </form>
+
+      <div class="note">بعد الإنشاء ستظهر نافذة تحتوي على رمز العائلة لنسخه.</div>
+
+      <input id="fileInput" type="file" accept="image/*" style="display:none" />
+    </div>
+  </main>
+
+  <div id="resultOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+    <div class="card" onclick="event.stopPropagation()">
+      <div class="thumb"><img id="resultImg" src="" alt="صورة العائلة"></div>
+
+      <div class="center">
+        <div id="resultTitle" class="fam-name">اسم العائلة</div>
+        <div id="resultKey" class="key" tabindex="0" aria-label="رمز العائلة">xxxxxxxx</div>
+      </div>
+
+      <div class="actions">
+        <button id="copyBtn" class="small-btn primary" title="نسخ الرمز">نسخ الرمز</button>
+        <button id="cancelBtn" class="small-btn" title="العودة للرئيسية">إلغاء والعودة</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const previewArea = document.getElementById('previewArea');
+    const previewImg = document.getElementById('previewImg');
+    const fileInput = document.getElementById('fileInput');
+    const form = document.getElementById('form');
+    const nameInput = document.getElementById('name');
+    const createBtn = document.getElementById('createBtn');
+
+    const overlay = document.getElementById('resultOverlay');
+    const resultImg = document.getElementById('resultImg');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultKey = document.getElementById('resultKey');
+    const copyBtn = document.getElementById('copyBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    previewArea.addEventListener('click', () => fileInput.click());
+
+    previewArea.addEventListener('dragover', e => { e.preventDefault(); previewArea.style.opacity = 0.95; });
+    previewArea.addEventListener('dragleave', () => { previewArea.style.opacity = 1; });
+    previewArea.addEventListener('drop', e => {
+      e.preventDefault();
+      previewArea.style.opacity = 1;
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f && f.type.startsWith('image/')) setPreviewFromFile(f);
+    });
+
+    fileInput.addEventListener('change', e => {
+      const f = e.target.files && e.target.files[0];
+      if (f) setPreviewFromFile(f);
+    });
+
+    function setPreviewFromFile(file) {
+      const url = URL.createObjectURL(file);
+      previewImg.src = url;
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+    }
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      if (!name) { nameInput.focus(); return false; }
+
+      createBtn.disabled = true;
+      createBtn.textContent = 'جارٍ...';
+
+      try {
+        const fd = new FormData();
+        fd.append('name', name);
+        const f = fileInput.files && fileInput.files[0];
+        if (f) fd.append('family_image', f);
+
+        const res = await fetch('/api/families/create', {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: fd
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.ok) {
+          alert((data && data.error) ? data.error : 'فشل الإنشاء');
+          return false;
+        }
+
+        resultTitle.textContent = (data.family && data.family.name) ? data.family.name : name;
+        resultImg.src = (data.family && data.family.imageUrl) ? data.family.imageUrl : previewImg.src;
+        resultKey.textContent = data.key || '';
+
+        overlay.style.display = 'flex';
+      } catch (err) {
+        console.error(err);
+        alert('خطأ في الاتصال');
+      } finally {
+        createBtn.disabled = false;
+        createBtn.textContent = 'إنشاء';
+      }
+      return false;
+    }
+
+    copyBtn.addEventListener('click', async () => {
+      const txt = resultKey.textContent || '';
+      try {
+        await navigator.clipboard.writeText(txt);
+        copyBtn.textContent = 'تم النسخ';
+        setTimeout(() => copyBtn.textContent = 'نسخ الرمز', 1400);
+      } catch (e) {
+        alert('فشل النسخ');
+      }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      window.location.href = '/chat_list';
+    });
+
+    overlay.addEventListener('click', () => {
+      window.location.href = '/chat_list';
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && overlay.style.display === 'flex') {
+        window.location.href = '/chat_list';
+      }
+    });
+  </script>
+</body>
+</html>

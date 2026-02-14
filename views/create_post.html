@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إنشاء منشور جديد - Aite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap');
+
+        body {
+            background-color: #000000;
+            color: #e4e6eb;
+            font-family: 'Tajawal', sans-serif;
+            overflow-x: hidden;
+            /* خلفية شبكية خفيفة جداً لإعطاء عمق للأسود */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* لوحة زجاجية سوداء */
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.7);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
+        }
+
+        /* حقول الإدخال */
+        .glass-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+            background: rgba(0, 0, 0, 0.8);
+            border-color: rgba(255, 255, 255, 0.2);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-input::placeholder {
+            color: #555;
+        }
+
+        /* تخصيص السكرول بار */
+        .custom-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #333; 
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+        /* زر التسجيل مع تأثير النبض الأبيض */
+        @keyframes pulse-white {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 255, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+        .recording-pulse {
+            animation: pulse-white 2s infinite;
+            border-color: #fff !important;
+            background-color: #fff !important;
+            color: #000 !important;
+        }
+
+        /* زر النشر الفخم */
+        .submit-btn-premium {
+            background: #fff;
+            color: #000;
+            border: 1px solid #fff;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .submit-btn-premium:hover:not(:disabled) {
+            background: #000;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+        .submit-btn-premium:disabled {
+            background: #222;
+            color: #555;
+            border-color: #333;
+        }
+
+        /* زر المرفقات */
+        .attach-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .attach-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* WaveSurfer Container */
+        #waveform-preview {
+            height: 80px; 
+            background: linear-gradient(180deg, rgba(20,20,20,1) 0%, rgba(30,30,30,1) 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="glass-panel p-6 sm:p-8 rounded-[2rem] w-full max-w-2xl relative z-10">
+        
+        <div class="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
+            <a href="/chat_list" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/5 transition duration-300" title="العودة">
+                 <i class="fas fa-arrow-right text-lg"></i>
+            </a>
+            <h1 class="text-2xl font-bold text-white tracking-wide">
+                إنشاء منشور
+            </h1>
+            <div class="w-10"></div> 
+        </div>
+        
+        <form id="createPostForm" action="/api/posts/create" method="POST" enctype="multipart/form-data">
+            
+            <div class="mb-6 relative">
+                <i class="fas fa-pen absolute top-5 right-5 text-gray-600 text-xs"></i>
+                <textarea id="postContent" name="content" rows="6" placeholder="اكتب ما تفكر به..."
+                          class="glass-input custom-scroll w-full p-5 pr-10 rounded-2xl text-lg resize-none"></textarea>
+            </div>
+            
+            <input type="file" id="mediaFile" name="media" accept="image/*,audio/*,video/*" class="hidden">
+
+            <div id="mediaPreviewContainer" class="hidden mb-6 p-1 bg-neutral-900 border border-white/10 rounded-2xl relative">
+                <div class="flex justify-center items-center bg-black rounded-xl overflow-hidden">
+                    <div id="filePreview" class="max-h-80 w-full flex items-center justify-center"></div>
+                </div>
+                <button type="button" id="removeMediaBtn" class="absolute -top-3 -left-3 bg-neutral-800 hover:bg-red-900 border border-white/10 text-white rounded-full w-8 h-8 flex items-center justify-center transition shadow-lg">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+
+            <div id="audioRecorderContainer" class="mb-6 p-5 border border-white/5 bg-white/[0.02] rounded-2xl flex flex-col items-center transition-all duration-300">
+                
+                <div class="flex items-center justify-between w-full mb-4 px-2">
+                    <h3 class="text-sm font-medium text-gray-400">تسجيل صوتي</h3>
+                    <span id="recordingStatus" class="text-xs font-mono text-gray-600">جاهز</span>
+                </div>
+                
+                <div class="flex items-center justify-center gap-6 mb-4">
+                    <button type="button" id="startRecordingBtn" class="w-14 h-14 rounded-full border border-white/20 bg-black text-white hover:border-white transition-all flex items-center justify-center group disabled:opacity-30" title="بدء التسجيل">
+                        <i class="fas fa-microphone text-lg group-hover:scale-110 transition-transform"></i>
+                    </button>
+                    
+                    <button type="button" id="stopRecordingBtn" class="w-14 h-14 rounded-full border border-white/5 bg-neutral-900 text-gray-400 hover:text-white hover:bg-neutral-800 flex items-center justify-center transition-all disabled:opacity-20 disabled:cursor-not-allowed" disabled title="إيقاف">
+                        <i class="fas fa-stop text-lg"></i>
+                    </button>
+                </div>
+
+                <div id="waveform-preview" class="w-full hidden mt-2 shadow-inner"></div>
+
+                <div id="audioPlaybackContainer" class="w-full mt-4 hidden">
+                    <button id="playPausePreview" type="button" class="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/5 text-gray-200 rounded-xl transition duration-300 flex items-center justify-center gap-3 text-sm">
+                        <i class="fas fa-play text-xs"></i> استمع للتسجيل
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-white/5 mt-2">
+                
+                <button type="button" id="addMediaBtn" class="attach-btn w-full sm:w-auto px-5 py-3 rounded-xl flex items-center justify-center gap-3 text-gray-300">
+                    <i class="fas fa-paperclip text-gray-500"></i>
+                    <span class="text-sm">إرفاق وسائط</span>
+                </button>
+
+                <button type="submit" id="submitBtn" class="submit-btn-premium w-full sm:w-auto px-10 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2" disabled>
+                    <span id="submitBtnText">نشر</span>
+                    <i class="fas fa-arrow-left text-xs transform -rotate-45"></i>
+                    <i id="loadingIndicator" class="fas fa-spinner fa-spin hidden"></i>
+                </button>
+            </div>
+            
+            <div id="errorMessage" class="text-red-400 bg-red-900/10 border border-red-900/20 rounded-lg p-3 mt-4 text-center text-sm hidden"></div>
+
+        </form>
+    </div>
+    
+    <script>
+        // ************** الثوابت والمتغيرات **************
+        const form = document.getElementById('createPostForm');
+        const mediaFile = document.getElementById('mediaFile');
+        const addMediaBtn = document.getElementById('addMediaBtn');
+        const removeMediaBtn = document.getElementById('removeMediaBtn');
+        const mediaPreviewContainer = document.getElementById('mediaPreviewContainer');
+        const filePreview = document.getElementById('filePreview');
+        const postContent = document.getElementById('postContent');
+        const submitBtn = document.getElementById('submitBtn');
+        const submitBtnText = document.getElementById('submitBtnText');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+        const audioRecorderContainer = document.getElementById('audioRecorderContainer');
+        
+        const startRecordingBtn = document.getElementById('startRecordingBtn');
+        const stopRecordingBtn = document.getElementById('stopRecordingBtn');
+        const recordingStatus = document.getElementById('recordingStatus');
+        const waveformPreview = document.getElementById('waveform-preview'); 
+        const audioPlaybackContainer = document.getElementById('audioPlaybackContainer');
+        const playPausePreview = document.getElementById('playPausePreview');
+        
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob = null;
+        let mediaStream = null;
+        let wavesurferPreview; 
+        
+        // ************** تهيئة WaveSurfer (ألوان أحادية) **************
+        function initializeWaveSurfer() {
+            if (wavesurferPreview) {
+                 wavesurferPreview.destroy();
+            }
+            wavesurferPreview = WaveSurfer.create({
+                container: '#waveform-preview',
+                waveColor: '#404040',    // رمادي غامق للموجة غير المشغلة
+                progressColor: '#ffffff', // أبيض ناصع للموجة المشغلة
+                cursorColor: 'transparent',
+                barWidth: 2,
+                barRadius: 2,
+                barGap: 2,
+                responsive: true,
+                height: 80,
+                backend: 'MediaElement',
+                rtl: true,
+            });
+            
+            playPausePreview.onclick = () => {
+                wavesurferPreview.playPause();
+            };
+
+            wavesurferPreview.on('play', () => {
+                playPausePreview.innerHTML = '<i class="fas fa-pause text-xs"></i> إيقاف مؤقت';
+                playPausePreview.classList.add('bg-white/10');
+            });
+            wavesurferPreview.on('pause', () => {
+                playPausePreview.innerHTML = '<i class="fas fa-play text-xs"></i> استمع للتسجيل';
+                playPausePreview.classList.remove('bg-white/10');
+            });
+            wavesurferPreview.on('finish', () => {
+                 playPausePreview.innerHTML = '<i class="fas fa-redo text-xs"></i> إعادة';
+                 wavesurferPreview.seekTo(0);
+            });
+        }
+
+        // ************** وظائف تسجيل الصوت **************
+
+        async function startRecording() {
+            try {
+                initializeWaveSurfer();
+                waveformPreview.classList.remove('hidden');
+                audioPlaybackContainer.classList.add('hidden');
+                
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(mediaStream);
+                audioChunks = [];
+                audioBlob = null;
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    startRecordingBtn.classList.remove('recording-pulse');
+                    startRecordingBtn.innerHTML = '<i class="fas fa-microphone text-lg"></i>';
+                    
+                    audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    wavesurferPreview.load(audioUrl); 
+                    
+                    audioPlaybackContainer.classList.remove('hidden');
+                    
+                    const recordedFile = new File([audioBlob], "recorded_audio.webm", { type: mediaRecorder.mimeType });
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(recordedFile);
+                    mediaFile.files = dataTransfer.files; 
+                    
+                    recordingStatus.textContent = 'تم الالتقاط';
+                    recordingStatus.style.color = '#fff';
+                    checkInputs();
+                };
+
+                mediaRecorder.start();
+                
+                startRecordingBtn.disabled = true;
+                stopRecordingBtn.disabled = false;
+                startRecordingBtn.classList.add('recording-pulse'); 
+                startRecordingBtn.innerHTML = '<i class="fas fa-circle text-red-500 text-xs"></i>'; // نقطة تسجيل
+                recordingStatus.textContent = 'جاري التسجيل...';
+                recordingStatus.style.color = '#fff';
+                
+            } catch (err) {
+                console.error('Error:', err);
+                recordingStatus.textContent = 'خطأ ميكروفون';
+                startRecordingBtn.disabled = false;
+                stopRecordingBtn.disabled = true;
+                startRecordingBtn.classList.remove('recording-pulse');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+            startRecordingBtn.disabled = false;
+            stopRecordingBtn.disabled = true;
+            startRecordingBtn.classList.remove('recording-pulse');
+        }
+        
+        function resetAudioRecording() {
+            stopRecording();
+            if(wavesurferPreview) {
+                wavesurferPreview.empty();
+                wavesurferPreview.destroy();
+                wavesurferPreview = null;
+            }
+            audioPlaybackContainer.classList.add('hidden');
+            waveformPreview.classList.add('hidden');
+            recordingStatus.textContent = 'جاهز';
+            recordingStatus.style.color = '#666';
+            mediaFile.value = '';
+            audioBlob = null;
+            audioChunks = [];
+        }
+
+        // ************** معاينة الملفات **************
+        function setupPreview(file) {
+            const fileType = file.type.split('/')[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                let previewElement;
+                filePreview.innerHTML = ''; 
+
+                if (fileType === 'image') {
+                    previewElement = `<img src="${e.target.result}" alt="Preview" class="w-full h-auto max-h-[350px] object-contain">`;
+                } else if (fileType === 'video') {
+                    previewElement = `<video src="${e.target.result}" controls class="w-full h-auto max-h-[350px] bg-black"></video>`;
+                } else if (fileType === 'audio') {
+                    previewElement = `<div class="w-full p-4 flex items-center justify-center gap-3 text-gray-300"><i class="fas fa-file-audio text-2xl"></i> <span class="text-sm font-mono truncate">${file.name}</span></div>`;
+                } else {
+                    previewElement = `<div class="text-gray-500 p-4 text-sm">ملف غير مدعوم للمعاينة</div>`;
+                }
+
+                filePreview.innerHTML = previewElement;
+                mediaPreviewContainer.classList.remove('hidden');
+                audioRecorderContainer.classList.add('hidden');
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function checkInputs() {
+            const hasContent = postContent.value.trim().length > 0;
+            const hasMediaFile = mediaFile.files.length > 0;
+            
+            if (hasContent || hasMediaFile) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        addMediaBtn.addEventListener('click', () => {
+            resetAudioRecording();
+            audioRecorderContainer.classList.add('hidden');
+            mediaFile.click();
+        });
+
+        removeMediaBtn.addEventListener('click', () => {
+            mediaFile.value = ''; 
+            filePreview.innerHTML = '';
+            mediaPreviewContainer.classList.add('hidden');
+            audioRecorderContainer.classList.remove('hidden'); 
+            checkInputs(); 
+        });
+
+        mediaFile.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                setupPreview(e.target.files[0]);
+                audioRecorderContainer.classList.add('hidden'); 
+            }
+            checkInputs(); 
+        });
+
+        postContent.addEventListener('input', checkInputs); 
+        startRecordingBtn.addEventListener('click', startRecording);
+        stopRecordingBtn.addEventListener('click', stopRecording);
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtnText.textContent = 'جاري النشر';
+            loadingIndicator.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('content', postContent.value.trim());
+
+            if (mediaFile.files.length > 0) {
+                formData.append('media', mediaFile.files[0]);
+            } 
+            
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+
+                if (response.ok && result.ok) {
+                    window.location.href = '/chat_list';
+                } else {
+                    errorMessage.textContent = result.error || 'حدث خطأ';
+                    errorMessage.classList.remove('hidden');
+                    submitBtn.disabled = false;
+                    submitBtnText.textContent = 'نشر';
+                    loadingIndicator.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessage.textContent = 'فشل الاتصال.';
+                errorMessage.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtnText.textContent = 'نشر';
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkInputs(); 
+        });
+    </script>
+</body>
+</html>

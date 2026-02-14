@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>العائلات — Aite</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      background: linear-gradient(180deg,#020202 0%, #070707 100%);
+      color: #e6eefb;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .glass-page {
+      max-width: 980px;
+      margin: 36px auto;
+      background: rgba(10,10,12,0.6);
+      border: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    }
+    .search-container { margin-top: 20px; position: relative; }
+    .search-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px 40px 12px 12px;
+      color: white;
+      outline: none;
+    }
+    .search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+    .page-header { display:flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .page-title { font-size: 1.4rem; font-weight: 900; color: #fff; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .btn-action {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #cbd5e1;
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .btn-action:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .families-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 18px; }
+    .family-tile {
+      background: rgba(20,20,20,0.55);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: transform .12s ease;
+    }
+    .family-tile:hover { transform: translateY(-6px); }
+    .family-tile img { width: 88px; height: 88px; object-fit: cover; border-radius: 10px; }
+    .empty-state { text-align:center; color: #9ca3af; padding: 36px 12px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="glass-page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">ابحث عن عائلتك</div>
+        <div class="text-sm text-gray-400">أو انضم لعائلة جديدة</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-action" onclick="window.location.href='/create-family'" title="إنشاء عائلة">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button class="btn-action" onclick="goBack()" title="رجوع">
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="search-container">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" id="familySearch" class="search-input" placeholder="اكتب اسم العائلة للبحث..." onkeyup="filterFamilies()">
+    </div>
+
+    <div id="familiesGrid" class="families-grid"></div>
+
+    <div id="emptyState" class="empty-state hidden">
+      <i class="far fa-frown text-3xl mb-3"></i>
+      <div class="mt-2" id="emptyMessage">لا توجد عائلات بعد.</div>
+    </div>
+  </div>
+
+  <script>
+    const grid = document.getElementById('familiesGrid');
+    const empty = document.getElementById('emptyState');
+    let allFamilies = [];
+
+    function goBack() { window.history.back(); }
+
+    function filterFamilies() {
+      const query = document.getElementById('familySearch').value.toLowerCase();
+      const filtered = allFamilies.filter(f => (f.name || '').toLowerCase().includes(query));
+      renderFamilies(filtered);
+    }
+
+    function renderFamilies(list) {
+      if (list.length === 0) {
+        empty.classList.remove('hidden');
+        grid.innerHTML = '';
+      } else {
+        empty.classList.add('hidden');
+        grid.innerHTML = list.map(f => `
+          <div class="family-tile" onclick="window.location.href='/family/${f.id}'">
+            <img src="${f.imageUrl || 'https://via.placeholder.com/88'}" alt="">
+            <div>
+              <div style="font-weight:800;color:#fff">${f.name}</div>
+              <div style="font-size:0.9rem;color:#9ca3af">${f.membersCount || 0} عضو</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function fetchFamilies() {
+      try {
+        const res = await fetch('/api/families');
+        const data = await res.json();
+        if (data.ok) {
+          allFamilies = data.families || [];
+          renderFamilies(allFamilies);
+        }
+      } catch (err) { console.error(err); }
+    }
+    document.addEventListener('DOMContentLoaded', fetchFamilies);
+  </script>
+</body>
+</html>

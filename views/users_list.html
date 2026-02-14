@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aite - المحادثات</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000000;
+            color: #e4e6eb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .glass-navbar {
+            background-color: rgba(30, 30, 30, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .app-logo { font-family: 'Montserrat', sans-serif; font-weight: 800; }
+
+        .glass-user-card {
+            background-color: rgba(20, 20, 20, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        .glass-user-card.unread {
+            background-color: rgba(13, 148, 136, 0.12);
+            border-right: 4px solid #0d9488;
+        }
+
+        .unread-badge {
+            background-color: #0d9488;
+            color: white;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        .verified-badge-img {
+            width: 17px;
+            height: 17px;
+            margin-right: 5px;
+            flex-shrink: 0;
+        }
+
+        .name-wrapper {
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            max-width: 100%;
+        }
+
+        .username-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .online-dot {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            width: 12px;
+            height: 12px;
+            background: #22c55e;
+            border: 2px solid #000;
+            border-radius: 50%;
+        }
+
+        /* تنسيق علامات الصح */
+        .status-icon {
+            font-size: 11px; /* تكبير بسيط */
+            margin-left: 6px;
+        }
+        .status-read {
+            color: #4ade80; /* أخضر ساطع */
+        }
+        .status-sent {
+            color: #9ca3af; /* رمادي فاتح */
+        }
+    </style>
+</head>
+<body>
+
+    <header class="sticky top-0 z-50 glass-navbar p-3">
+        <nav class="flex justify-between items-center max-w-6xl mx-auto">
+            <div class="flex items-center">
+                <img id="userProfilePic" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-full border border-gray-700 object-cover">
+            </div>
+            <div class="absolute inset-0 flex justify-center items-center pointer-events-none">
+                <span class="text-2xl font-extrabold text-white app-logo">Aite</span>
+            </div>
+            <a href="/chat_list" class="text-gray-400 p-2"><i class="fas fa-arrow-left text-xl"></i></a>
+        </nav>
+    </header>
+
+    <main class="max-w-xl mx-auto p-4">
+        <div id="usersListContainer" class="flex flex-col space-y-3">
+            <div id="loading" class="text-center py-10 text-gray-500">
+                <i class="fas fa-spinner fa-spin mr-2"></i> جاري التحميل...
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const VERIFIED_IMG_URL = "https://res.cloudinary.com/duixjs8az/image/upload/v1768036959/post_media/1768036959482-badge.png";
+        const container = document.getElementById('usersListContainer');
+        let currentUserId = null;
+
+        function getTimeLabel(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            const now = new Date();
+            if (date.toDateString() === now.toDateString()) {
+                return date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            }
+            return date.toLocaleDateString('ar-EG');
+        }
+
+        // --- دالة تحديد أيقونة الحالة (الجديدة) ---
+        function getStatusHtml(msg) {
+            // تظهر الأيقونات فقط إذا كنت أنا مرسل آخر رسالة
+            if (!msg || msg.senderId !== currentUserId) return '';
+            
+            // إذا كانت مقروءة (تأتي من الخادم كـ true)
+            if (msg.is_read === true) {
+                // صحين خضر
+                return '<i class="fas fa-check-double status-icon status-read"></i> ';
+            }
+            
+            // إذا لم تقرأ بعد (مرسلة فقط)
+            // صح واحد رمادي
+            return '<i class="fas fa-check status-icon status-sent"></i> ';
+        }
+
+        function createCard(user) {
+            const lastMsg = user.last_message || {};
+            const isUnread = (user.unread_count || 0) > 0;
+            const timeLabel = getTimeLabel(lastMsg.timestamp);
+            // استدعاء الدالة الجديدة
+            const statusHtml = getStatusHtml(lastMsg);
+            
+            const card = document.createElement('div');
+            card.id = `user-${user.id}`;
+            card.className = `glass-user-card p-3 rounded-2xl flex items-center cursor-pointer mb-1 ${isUnread ? 'unread' : ''}`;
+            // نخزن التايم ستامب وحالة القراءة لتجنب الوميض غير الضروري
+            card.dataset.timestamp = lastMsg.timestamp || 0;
+            card.dataset.readstatus = lastMsg.is_read || 'false';
+
+            card.onclick = () => window.location.href = `/chat?contactId=${user.id}&contactName=${encodeURIComponent(user.username)}`;
+
+            card.innerHTML = `
+                <div class="relative flex-shrink-0 ml-3">
+                    <img src="${user.profile_picture_url}" class="w-14 h-14 rounded-full object-cover">
+                    ${user.is_online ? '<div class="online-dot"></div>' : ''}
+                </div>
+                <div class="flex-grow min-w-0">
+                    <div class="flex justify-between items-center">
+                        <div class="name-wrapper">
+                            <span class="username-text font-bold text-gray-100 text-lg">${user.username}</span>
+                            ${user.is_verified ? `<img src="${VERIFIED_IMG_URL}" class="verified-badge-img">` : ''}
+                        </div>
+                        <span class="text-xs text-gray-500">${timeLabel}</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                        <div class="flex items-center text-sm truncate flex-grow ${isUnread ? 'text-white font-semibold' : 'text-gray-400'}">
+                            ${statusHtml}
+                            <span class="truncate">${lastMsg.content || 'ابدأ المحادثة الآن...'}</span>
+                        </div>
+                        ${isUnread ? `<span class="unread-badge mr-2">${user.unread_count}</span>` : ''}
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        function updateList(users) {
+            document.getElementById('loading')?.remove();
+
+            users.sort((a, b) => {
+                const timeA = a.last_message ? new Date(a.last_message.timestamp).getTime() : 0;
+                const timeB = b.last_message ? new Date(b.last_message.timestamp).getTime() : 0;
+                return timeB - timeA;
+            });
+
+            users.forEach((user) => {
+                const existingCard = document.getElementById(`user-${user.id}`);
+                const newCard = createCard(user);
+
+                if (existingCard) {
+                    const currentTs = existingCard.dataset.timestamp;
+                    const currentRead = existingCard.dataset.readstatus;
+                    const newTs = String(user.last_message?.timestamp || 0);
+                    const newRead = String(user.last_message?.is_read || 'false');
+
+                    // تحديث فقط إذا تغير الوقت أو حالة القراءة
+                    if (currentTs !== newTs || currentRead !== newRead) {
+                        container.replaceChild(newCard, existingCard);
+                    }
+                } else {
+                    container.appendChild(newCard);
+                }
+            });
+            
+            // إعادة الترتيب البصري إذا لزم الأمر
+            const cards = Array.from(container.children);
+            cards.sort((a, b) => (b.dataset.timestamp || 0) - (a.dataset.timestamp || 0));
+            cards.forEach(card => container.appendChild(card));
+        }
+
+        // --- نظام إرسال نبضات النشاط (Heartbeat) ---
+        function startHeartbeat() {
+            // إرسال إشارة فورية
+            fetch('/api/status/heartbeat', { method: 'POST' }).catch(()=>{});
+            
+            // تكرار الإشارة كل 45 ثانية
+            setInterval(() => {
+                fetch('/api/status/heartbeat', { method: 'POST' }).catch(()=>{});
+            }, 45000);
+        }
+
+        function init() {
+            // إرسال إشارة النشاط عند تحميل الصفحة
+            fetch('/api/status/heartbeat', { method: 'POST' }).catch(()=>{});
+
+            fetch('/api/profile').then(r => r.json()).then(d => {
+                currentUserId = d.id;
+                document.getElementById('userProfilePic').src = d.profile_picture_url || '';
+                
+                // تشغيل نظام النشاط بمجرد معرفة المستخدم
+                startHeartbeat();
+            });
+
+            const es = new EventSource('/api/users/stream', { withCredentials: true });
+            es.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                if (data.users) updateList(data.users);
+            };
+        }
+
+        // إرسال نبض نشاط عند دخول المستخدم للصفحة
+        window.addEventListener('load', init);
+
+        // (اختياري) إرسال نبض نشاط عند عودة المستخدم من الخلفية
+        window.addEventListener('focus', () => {
+            fetch('/api/status/heartbeat', { method: 'POST' }).catch(()=>{});
+        });
+
+    </script>
+</body>
+</html>

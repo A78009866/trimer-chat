@@ -1,38 +1,81 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="ltr">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="screen-orientation" content="portrait-primary">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trimer</title>
+    <title>Aite</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    
     <style>
-        /* ... (احتفظ بجميع أنماط CSS كما هي) ... */
         body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #000000;
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(57, 130, 247, 0.18) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(120, 50, 220, 0.12) 0%, transparent 40%);
+            color: #e4e6eb;
+            height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            overflow: hidden;
             margin: 0;
-            background-color: #121212;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            flex-direction: column;
         }
 
-        img {
-            width: 150px;
-            margin-bottom: 20px;
-            filter: brightness(0) invert(1);
+        .splash-logo {
+            width: 110px;
+            height: 110px;
+            border-radius: 24px;
+            object-fit: cover;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(57, 130, 247, 0.2);
+            animation: float 3s ease-in-out infinite;
         }
 
+        .app-name {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 3.8rem;
+            font-weight: 800;
+            margin-bottom: 2px;
+            background: linear-gradient(135deg, #ffffff 0%, #3982f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -2px;
+            filter: drop-shadow(0 0 15px rgba(57, 130, 247, 0.3));
+        }
+
+        /* تنسيق عبارة from salem ahmed بخط تجوال */
+        .typing-container {
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 300; /* وزن خفيف ليعطي مظهر عصري */
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 2px;
+            text-transform: lowercase;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .typing-effect {
+            position: relative;
+            background: linear-gradient(to right, #94a3b8, #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* المؤشر النحيف */
         .typing-effect::after {
-            content: "|";
+            content: "";
             display: inline-block;
-            animation: blink 0.7s infinite;
-            font-weight: bold;
-            color: #ffffff;
+            width: 1.5px;
+            height: 16px;
+            background-color: #3982f7;
+            margin-left: 4px;
+            animation: blink 0.8s infinite;
         }
 
         @keyframes blink {
@@ -40,74 +83,61 @@
             50% { opacity: 0; }
         }
 
-        .typing-effect, h3 {
-            font-weight: bold;
-            color: #ffffff;
-            text-shadow: 0 0 5px rgba(255,255,255,0.3);
-        }
-
-        h3 {
-            font-size: 24px;
-            margin-top: 15px;
-        }
-        
-        @media screen and (min-width: 320px) and (max-width: 767px) and (orientation: landscape) {
-            html {
-                transform: rotate(-90deg);
-                transform-origin: left top;
-                width: 100vh;
-                height: 100vw;
-                overflow-x: hidden;
-                position: absolute;
-                top: 100%;
-                left: 0;
-            }
-            body {
-                touch-action: pan-x pan-y;
-            }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
         }
     </style>
 </head>
 <body>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/4/46/1000084215-removebg-preview.png" alt="شعار Trimer">
+
+    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Sond_skyline_from_top_City_Hall_-_Aug_2025.jpg" alt="Aite Logo" class="splash-logo">
     
-    <h4 class="typing-effect"></h4>
+    <h1 class="app-name">Aite</h1>
+
+    <div class="typing-container">
+        <span class="typing-effect"></span>
+    </div>
 
     <script>
         const text = "from salem ahmed";
         let index = 0;
-        function typeEffect() {
+        const speed = 100;
+
+        function typeWriter() {
+            const element = document.querySelector(".typing-effect");
             if (index < text.length) {
-                document.querySelector(".typing-effect").textContent += text.charAt(index);
+                element.textContent += text.charAt(index);
                 index++;
-                setTimeout(typeEffect, 100);
+                setTimeout(typeWriter, speed);
+            } else {
+                setTimeout(() => {
+                    window.location.href = "/check-status";
+                }, 2000);
             }
         }
-        typeEffect();
 
-        setTimeout(function() {
-            // قم بإعادة توجيه المستخدم إلى المسار الجديد الذي يتحقق من حالة الجلسة
-            window.location.href = "/check-status";
-        }, 3000);
-    </script>
-    <script>
+        window.onload = typeWriter;
+
         function lockOrientation() {
             if (window.screen.orientation && window.screen.orientation.lock) {
-                window.screen.orientation.lock('portrait').catch(function(error) {
-                    console.log('Orientation lock failed: ', error);
-                });
-            } else if (window.screen.lockOrientation) {
-                window.screen.lockOrientation('portrait');
-            } else if (window.screen.mozLockOrientation) {
-                window.screen.mozLockOrientation('portrait');
-            } else if (window.screen.msLockOrientation) {
-                window.screen.msLockOrientation('portrait');
+                window.screen.orientation.lock('portrait').catch(() => {});
             }
         }
-
         window.addEventListener('load', lockOrientation);
-        window.addEventListener('resize', lockOrientation);
+        // Global Function لاستقبال التوكن من الأندرويد
+window.receiveAndroidToken = function(token) {
+    console.log("Received FCM Token from Android:", token);
+    
+    // إرسال التوكن إلى السيرفر لحفظه في قاعدة البيانات للمستخدم الحالي
+    fetch('/api/save-fcm-token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ token: token })
+    }).catch(err => console.error("Error saving token", err));
+};
     </script>
-    <h3>Trimer</h3>
 </body>
 </html>
