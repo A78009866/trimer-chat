@@ -611,16 +611,21 @@ app.post('/api/admin/users/:userId/verify', requireAuth, requireAdmin, async (re
     res.status(500).json({ ok: false, error: 'فشل في تحديث حالة التحقق.' });
   }
 });
-
 // ==========================================
-// مسارات نظام القصص (Stories)
+// مسارات نظام القصص (Stories) - تم التصحيح
 // ==========================================
 
 // 1. رفع قصة جديدة
-app.post('/api/stories', upload.single('media'), async (req, res) => {
+app.post('/api/stories', requireAuth, upload.single('media'), async (req, res) => {
     try {
-        if (!req.session.user) return res.status(401).json({ error: 'غير مصرح لك' });
+        const userId = req.session.userId;
         
+        // جلب بيانات المستخدم من قاعدة البيانات لأن الجلسة تحتوي فقط على userId
+        const userSnap = await db.ref(`profiles/${userId}`).once('value');
+        const userData = userSnap.val();
+
+        if (!userData) return res.status(404).json({ error: 'المستخدم غير موجود' });
+
         const file = req.file;
         if (!file) return res.status(400).json({ error: 'الرجاء إرفاق صورة أو فيديو' });
 
@@ -629,12 +634,12 @@ app.post('/api/stories', upload.single('media'), async (req, res) => {
         const mediaType = file.mimetype.startsWith('video') ? 'video' : 'image';
         const audioUrl = req.body.audioUrl || null; // رابط الأغنية إن وجد
 
-        const newStoryRef = getDatabase().ref('stories').push();
+        const newStoryRef = db.ref('stories').push();
         const storyData = {
             id: newStoryRef.key,
-            userId: req.session.user.uid,
-            username: req.session.user.username,
-            profilePic: req.session.user.profile_picture_url || DEFAULT_PROFILE_PIC_URL,
+            userId: userId,
+            username: userData.username || 'مستخدم',
+            profilePic: userData.profile_picture_url || DEFAULT_PROFILE_PIC_URL,
             mediaUrl,
             mediaType,
             audioUrl,
@@ -651,9 +656,9 @@ app.post('/api/stories', upload.single('media'), async (req, res) => {
 });
 
 // 2. جلب القصص (التي لم يمر عليها 24 ساعة)
-app.get('/api/stories', async (req, res) => {
+app.get('/api/stories', requireAuth, async (req, res) => {
     try {
-        const storiesRef = getDatabase().ref('stories');
+        const storiesRef = db.ref('stories');
         const snapshot = await storiesRef.once('value');
         const stories = [];
         const now = Date.now();
@@ -678,13 +683,11 @@ app.get('/api/stories', async (req, res) => {
 });
 
 // 3. الإعجاب بالقصة
-app.post('/api/stories/:storyId/like', async (req, res) => {
+app.post('/api/stories/:storyId/like', requireAuth, async (req, res) => {
     try {
-        if (!req.session.user) return res.status(401).json({ error: 'غير مصرح' });
-        
         const storyId = req.params.storyId;
-        const userId = req.session.user.uid;
-        const likeRef = getDatabase().ref(`stories/${storyId}/likes/${userId}`);
+        const userId = req.session.userId; // الاعتماد على الـ session الموحد
+        const likeRef = db.ref(`stories/${storyId}/likes/${userId}`);
         
         const snapshot = await likeRef.once('value');
         if (snapshot.exists()) {
