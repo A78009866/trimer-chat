@@ -11,9 +11,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Vibes&display=swap" rel="stylesheet">
     
-    <!-- Import Post Card Component -->
-    <link rel="import" href="/post-card.html">
-    
     <style>
         body {
             background-color: #000000;
@@ -75,7 +72,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Avatar wrapper */
         .avatar-wrapper {
             position: relative;
             display: inline-block;
@@ -113,7 +109,6 @@
           font-size: 13px;
         }
 
-        /* Friend buttons */
         .action-btn {
             padding:8px 10px;
             border-radius:10px;
@@ -156,7 +151,6 @@
           .action-btn.message, .btn-accept, .btn-reject { padding:5px 8px; font-size:12px; border-radius:10px; }
         }
 
-        /* Toast container */
         #toastContainer {
             position: fixed;
             top: 20px;
@@ -168,6 +162,310 @@
             gap: 8px;
             align-items: center;
             pointer-events: none;
+        }
+
+        /* Post Card Styles - INLINED from post-card.html */
+        .glass-post-card {
+            background-color: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        .waveform-post {
+            height: 60px;
+            background: #000000;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            overflow: hidden;
+        }
+        .audio-play-wrapper {
+            background: #000000;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .audio-play-button {
+            background: #ffffff;
+            color: #000000;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: transform .12s ease, box-shadow .12s ease;
+            cursor: pointer;
+        }
+        .audio-play-button i { color: #000000; }
+        .audio-play-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+        }
+        .audio-play-button:hover i { color: #000000 !important; }
+        .video-large {
+            width: 100%;
+            height: 480px;
+            max-height: 72vh;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+            display: block;
+        }
+        .video-large video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            background: #000;
+            cursor: pointer;
+        }
+        .video-play-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15));
+            transition: opacity 0.18s;
+            z-index: 30;
+        }
+        .video-play-overlay i {
+            font-size: 54px;
+            color: rgba(255, 255, 255, 0.94);
+            text-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+        }
+        .video-play-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .video-fs-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            z-index: 40;
+            cursor: pointer;
+        }
+        .video-fs-btn i { font-size: 14px; }
+        [id^="controls-bar-"] { display: none !important; }
+        .glass-comment-modal-content {
+            background-color: #18191a;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            top: auto;
+            height: 75vh;
+            border-radius: 20px 20px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 60;
+        }
+        .glass-comment-modal-content.open { transform: translateY(0); }
+        @media (min-width: 768px) {
+            .glass-comment-modal-content {
+                position: relative;
+                height: 80vh;
+                max-width: 500px;
+                margin: 0 auto;
+                border-radius: 16px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                transform: scale(0.95);
+                opacity: 0;
+                transition: all 0.2s ease-out;
+            }
+            .glass-comment-modal-content.open { transform: scale(1); opacity: 1; }
+        }
+        .modal-handle {
+            width: 40px;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            margin: 12px auto 8px auto;
+        }
+        .glass-modal-bg {
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            transition: opacity 0.3s;
+        }
+        .close-btn-circle {
+            background: rgba(255, 255, 255, 0.1);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .close-btn-circle:hover { background: rgba(255, 255, 255, 0.2); }
+        .media-container { max-height: 80vh; width: auto; }
+        .verified-badge-img {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 4px;
+            margin-left: 2px;
+            object-fit: cover;
+            vertical-align: middle;
+        }
+        .avatar-with-dot { position: relative; display: inline-flex; }
+        .online-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            background: #22c55e;
+            border: 2px solid #000;
+            border-radius: 999px;
+            box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+            z-index: 10;
+        }
+        .online-dot-small {
+            width: 10px;
+            height: 10px;
+            bottom: 1px;
+            right: 1px;
+            border-width: 1.5px;
+        }
+        #postOptionsModal .sheet {
+            background: #0b0b0c;
+            border-radius: 14px 14px 0 0;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .option-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 10px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.02);
+            color: #e6eefb;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+        }
+        .option-btn.danger {
+            background: linear-gradient(90deg, #7f1d1d, #ef4444);
+            color: white;
+            border: none;
+        }
+        .option-btn:active { transform: translateY(1px); }
+        .option-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .toast {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 90px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 10px;
+            z-index: 2000;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity .18s;
+        }
+        .toast.show { opacity: 1; }
+        .heart-btn { color: #ef4444 !important; }
+        .heart-btn i { color: #ef4444 !important; }
+        .active-reply {
+            border: 2px solid #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        .post-content { position: relative; }
+        .post-text {
+            color: #e6eefb;
+            line-height: 1.55;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            white-space: pre-wrap;
+            -webkit-font-smoothing: antialiased;
+        }
+        .post-text.collapsed { max-height: 6.6em; overflow: hidden; }
+        .post-text.expanded { max-height: none; }
+        .post-text-fade {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2.2em;
+            pointer-events: none;
+            background: linear-gradient(to top, rgba(24, 25, 26, 1), rgba(24, 25, 26, 0));
+        }
+        .read-more-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 8px;
+            background: transparent;
+            border: none;
+            color: #60a5fa;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 4px 6px;
+        }
+        .post-text a {
+            color: #60a5fa;
+            text-decoration: underline;
+            word-break: break-all;
+        }
+        .comment-item {
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(30, 30, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 8px;
+        }
+        .comment-actions button { font-size: 12px; }
+        .reply-item {
+            margin-right: 40px;
+            margin-top: 6px;
+            background: rgba(20, 20, 20, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-right: 3px solid #3b82f6;
+        }
+        .small-avatar { width: 28px; height: 28px; border-radius: 999px; }
+        .like-count { font-weight: 700; color: #9ca3af; font-size: 12px; }
+        #postMenu {
+            position: absolute;
+            z-index: 40;
+            background: #242526;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
@@ -189,7 +487,7 @@
 
             <div class="flex items-center space-x-4 space-x-reverse relative">
                 <button id="profileMenuButton" class="relative block" onclick="toggleProfileDropdown(event)">
-                    <img id="userProfilePic" src="https://res.cloudinary.com/duixjs8az/image/upload/v1765009560/post_media/1765009560909-default_profile.png" alt="صورة P" class="w-10 h-10 rounded-full border-2 border-blue-500 object-cover hover:ring-2 hover:ring-blue-400 transition duration-300 cursor-pointer">
+                    <img id="userProfilePic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%233182CE'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='16'%3EP%3C/text%3E%3C/svg%3E" alt="صورة P" class="w-10 h-10 rounded-full border-2 border-blue-500 object-cover hover:ring-2 hover:ring-blue-400 transition duration-300 cursor-pointer">
                 </button>
             </div>
 
@@ -219,7 +517,7 @@
                 <div class="p-4 pt-0 -mt-20 relative">
 
                     <div id="profileAvatarWrap" class="avatar-wrapper" data-user-id="">
-                        <img id="profileImage" src="https://res.cloudinary.com/duixjs8az/image/upload/v1765009560/post_media/1765009560909-default_profile.png" alt="صورة الملف الشخصي"
+                        <img id="profileImage" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect width='128' height='128' fill='%23666'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48'%3E👤%3C/text%3E%3C/svg%3E" alt="صورة الملف الشخصي"
                              class="w-32 h-32 rounded-full object-cover border-4 border-black shadow-lg mb-3 hover:ring-4 hover:ring-blue-400 transition duration-300">
                         
                         <span id="profileOnlineDot" class="status-indicator large" title="متصل الآن"></span>
@@ -262,12 +560,114 @@
     <!-- Toast container -->
     <div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- Include Post Card Component -->
-    <iframe src="/post-card.html" style="display:none;" onload="this.contentDocument.body.innerHTML && document.body.insertAdjacentHTML('beforeend', this.contentDocument.body.innerHTML)"></iframe>
+    <!-- Post Card Modals - INLINED -->
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 glass-modal-bg">
+        <div class="bg-[#1f2937] p-6 rounded-xl shadow-2xl max-w-sm w-full border border-gray-700 text-center" onclick="event.stopPropagation()">
+            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+            <h3 class="text-xl font-bold text-white mb-2">تأكيد الحذف</h3>
+            <p class="text-gray-400 mb-6">هل أنت متأكد أنك تريد حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء.</p>
+            <div class="flex justify-around space-x-4 space-x-reverse">
+                <button id="cancelDeleteBtn" class="p-2 w-full bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition duration-300">إلغاء</button>
+                <button id="confirmDeleteBtn" class="p-2 w-full bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition duration-300">تأكيد الحذف</button>
+            </div>
+            <div id="deleteMessage" class="text-red-500 mt-3 hidden"></div>
+        </div>
+    </div>
+
+    <!-- Media Viewer Modal -->
+    <div id="mediaViewerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 glass-modal-bg" onclick="closeMediaViewer(event)">
+        <button class="absolute top-4 left-4 text-white text-3xl z-50 p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition" onclick="closeMediaViewer(event)">
+            <i class="fas fa-times"></i>
+        </button>
+        <div id="mediaViewerContent" class="media-container flex items-center justify-center" onclick="event.stopPropagation()">
+        </div>
+    </div>
+
+    <!-- Comments Modal -->
+    <div id="commentModal" class="hidden fixed inset-0 z-50 flex items-end md:items-center justify-center glass-modal-bg transition-opacity duration-300">
+        <div id="commentModalContent" class="glass-comment-modal-content w-full md:w-auto" onclick="event.stopPropagation()">
+            
+            <div class="md:hidden w-full flex justify-center" onclick="closeCommentModal()">
+                <div class="modal-handle"></div>
+            </div>
+
+            <div class="flex justify-between items-center px-4 pb-2 pt-2 border-b border-gray-800">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    التعليقات 
+                    <span id="commentCountBadge" class="text-xs bg-gray-700 px-2 py-0.5 rounded-full text-gray-300">0</span>
+                </h3>
+                <button id="closeCommentModalBtn" class="close-btn-circle text-gray-300 hover:text-white" onclick="closeCommentModal()">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+            
+            <div id="commentsList" class="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#18191a] min-h-0">
+            </div>
+
+            <div class="p-3 border-t border-gray-800 bg-[#18191a]">
+                <div id="commentError" class="text-red-500 text-xs text-center mb-2 hidden"></div>
+                <div class="flex items-center gap-2 bg-[#242526] p-1.5 rounded-3xl border border-gray-700">
+                    <img id="myCurrentAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect width='32' height='32' fill='%23666'/%3E%3C/svg%3E" class="w-8 h-8 rounded-full object-cover border border-gray-600 ml-1">
+                    <input type="text" id="newCommentInput" placeholder="أضف تعليقاً..." 
+                           class="flex-grow bg-transparent text-white text-sm px-2 focus:outline-none" 
+                           dir="rtl" autocomplete="off"
+                           data-replying-to=""
+                           data-reply-comment-id="">
+                    <button id="postCommentBtn" class="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition w-9 h-9 flex items-center justify-center flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-arrow-up text-sm"></i>
+                    </button>
+                </div>
+                <div id="replyIndicator" class="text-sm text-blue-400 mt-2 hidden">
+                    <i class="fas fa-reply ml-1"></i>
+                    <span id="replyingToUsername"></span>
+                    <button onclick="cancelReply()" class="text-red-400 text-xs mr-3">
+                        <i class="fas fa-times ml-1"></i> إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Options Modal -->
+    <div id="postOptionsModal" class="hidden fixed inset-0 z-[80] flex items-end justify-center glass-modal-bg" onclick="closePostOptionsModal()">
+        <div class="sheet w-full md:max-w-md" onclick="event.stopPropagation()">
+            <div class="modal-handle" style="margin-bottom:8px;"></div>
+            <div class="p-3">
+                <div id="postOptionsMessage" class="text-sm text-gray-300 mb-2 hidden"></div>
+                <div class="option-row">
+                    <button id="postOptionsDeleteBtn" class="option-btn danger" onclick="confirmDeleteFromOptions(event)">
+                        <i class="fas fa-trash"></i>
+                        <span>حذف المنشور</span>
+                    </button>
+                </div>
+                <div class="option-row">
+                    <button id="postOptionsAddFriendBtn" class="option-btn" onclick="addFriendFromOptions(event)">
+                        <i class="fas fa-user-plus"></i>
+                        <span>إضافة صديق</span>
+                    </button>
+                </div>
+                <div class="option-row">
+                    <button id="postOptionsCloseBtn" class="option-btn" onclick="closePostOptionsModal()">
+                        <i class="fas fa-times"></i>
+                        <span>إلغاء</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Menu -->
+    <div id="postMenu" class="absolute z-40 bg-[#242526] rounded-lg shadow-xl border border-gray-700 hidden w-40">
+        <button id="deleteOptionBtn" class="flex items-center w-full p-3 text-red-400 hover:bg-[#343536] rounded-lg transition duration-300">
+            <i class="fas fa-trash ml-3"></i>
+            حذف المنشور
+        </button>
+    </div>
 
 <script>
 const VERIFIED_IMG_URL = "https://res.cloudinary.com/duixjs8az/image/upload/v1768036959/post_media/1768036959482-badge.png";
-const DEFAULT_PROFILE_PIC_URL = 'https://res.cloudinary.com/duixjs8az/image/upload/v1765009560/post_media/1765009560909-default_profile.png';
+const DEFAULT_PROFILE_PIC_URL = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'128\' height=\'128\'%3E%3Crect width=\'128\' height=\'128\' fill=\'%23666\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'white\' font-size=\'48\'%3E👤%3C/text%3E%3C/svg%3E';
 
 let currentProfileId = null;
 let currentUserId = null;
@@ -632,6 +1032,1103 @@ function escapeHtml(s) {
     if (!s && s !== 0) return '';
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
+</script>
+
+<!-- Post Card JavaScript - INLINED -->
+<script>
+// ============================================
+// POST CARD MODULE - Shared Functions
+// ============================================
+
+// Constants
+const POST_CARD_VERIFIED_IMG_URL = "https://res.cloudinary.com/duixjs8az/image/upload/v1768036959/post_media/1768036959482-badge.png";
+const POST_CARD_DEFAULT_AVATAR = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\'%3E%3Crect width=\'40\' height=\'40\' fill=\'%23666\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'white\' font-size=\'14\'%3EUser%3C/text%3E%3C/svg%3E';
+
+// State Variables
+let postCardCurrentUserId = null;
+let postCardActiveWaveSurfer = null;
+let postCardActiveVideo = null;
+let postCardCurrentPostIdForComments = null;
+let postCardCurrentPostIdToDelete = null;
+let postCardCurrentOptionsPostId = null;
+let postCardCurrentOptionsUserId = null;
+let postCardAudioWaveSurfers = {};
+let postCardCurrentReplyingTo = null;
+let postCardCurrentReplyCommentId = null;
+
+// ============================================
+// Utility Functions
+// ============================================
+
+function escapeHtml(s) {
+    if (s === undefined || s === null) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(s) {
+    if (s === undefined || s === null) return '';
+    return String(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function formatAndEscapeContent(text) {
+    if (text === undefined || text === null) return '';
+    let escapedText = String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const urlRegex = /(https?:\/\/[^\s'"]+)/g;
+    return escapedText.replace(urlRegex, function(url) {
+        const href = escapeAttr(url);
+        const visible = escapeHtml(url);
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 hover:underline transition" dir="ltr" onclick="event.stopPropagation()">${visible}</a>`;
+    });
+}
+
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+        try {
+            return date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        } catch (e) { return date.toLocaleTimeString(); }
+    } else if (diffInHours < 7 * 24) {
+        try {
+            return date.toLocaleDateString('ar-EG', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+        } catch (e) { return date.toLocaleDateString(); }
+    } else {
+        try {
+            return date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+        } catch (e) { return date.toLocaleDateString(); }
+    }
+}
+
+function formatVideoTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+// ============================================
+// Post Card Creation
+// ============================================
+
+function createPostCard(post) {
+    let mediaContent = '';
+    
+    if (post.media) {
+        if (post.media.type === 'image') {
+            const imgUrl = escapeAttr(post.media.url || '');
+            mediaContent = `
+                <div class="mt-3 cursor-pointer" onclick="openMediaViewer('${imgUrl}', 'image', event)">
+                    <img src="${imgUrl}" alt="صورة المنشور" class="w-full max-h-96 object-cover rounded-lg" onerror="this.onerror=null;this.src='${escapeAttr(POST_CARD_DEFAULT_AVATAR)}'">
+                </div>
+            `;
+        } else if (post.media.type === 'video') {
+            const poster = escapeAttr(post.media.poster || post.media.thumbnail || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'450\'%3E%3Crect width=\'800\' height=\'450\' fill=\'%23222\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23666\' font-size=\'24\'%3EVideo%3C/text%3E%3C/svg%3E');
+            const videoSrc = escapeAttr(post.media.url || '');
+            mediaContent = `
+                <div class="mt-3 relative w-full video-large rounded-lg overflow-hidden bg-black group">
+                    <video id="video-${escapeAttr(post.postId)}" src="${videoSrc}" 
+                           class="w-full h-full object-cover" 
+                           poster="${poster}" 
+                           preload="metadata"
+                           onclick="toggleVideoPlay('${escapeAttr(post.postId)}', event)">
+                    </video>
+                    
+                    <div id="play-overlay-${escapeAttr(post.postId)}" class="video-play-overlay" onclick="toggleVideoPlay('${escapeAttr(post.postId)}', event)">
+                        <i class="fas fa-play"></i>
+                    </div>
+
+                    <button class="video-fs-btn" onclick="toggleFullscreen('${escapeAttr(post.postId)}', event)" title="تكبير">
+                      <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            `;
+        } else if (post.media.type === 'audio') {
+            const url = escapeAttr(post.media.url || '');
+            mediaContent = `
+                <div class="mt-3">
+                    <div class="audio-play-wrapper">
+                        <button id="audio-btn-${escapeAttr(post.postId)}" class="audio-play-button" onclick="toggleAudioPlay('${escapeAttr(post.postId)}')">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <div id="waveform-${escapeAttr(post.postId)}" class="waveform-post flex-grow" data-src="${url}"></div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    const likeIconClass = post.is_liked ? 'fas fa-heart text-red-500' : 'far fa-heart text-red-500';
+    const likeButtonClass = 'text-red-500';
+    const onlineDotHtml = post.user && post.user.is_online ? `<span class="online-dot online-dot-small" title="متصل الآن"></span>` : '';
+    const verifiedBadgeHtml = post.user && post.user.is_verified ? `<img src="${POST_CARD_VERIFIED_IMG_URL}" class="verified-badge-img" alt="موثق" title="موثق">` : '';
+
+    const menuButtonHtml = `
+        <button class="text-gray-400 hover:text-white transition duration-300 post-menu-button" 
+                onclick="togglePostMenu('${escapeAttr(post.postId)}', '${escapeAttr(post.userId)}', event, this)">
+            <i class="fas fa-ellipsis-v"></i>
+        </button>
+    `;
+
+    const safeUsername = escapeHtml((post.user && (post.user.username || post.user.name)) || 'مستخدم');
+    const profilePic = escapeAttr((post.user && post.user.profile_picture_url) || POST_CARD_DEFAULT_AVATAR);
+    const formattedContent = formatAndEscapeContent(post.content || '');
+
+    return `
+        <div class="glass-post-card p-4 rounded-xl shadow-lg" data-post-id="${escapeAttr(post.postId)}">
+            <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center">
+                    <a href="/profile?userId=${escapeAttr(post.userId)}" class="avatar-with-dot" onclick="event.stopPropagation()">
+                        <img src="${profilePic}" alt="${safeUsername}" class="w-10 h-10 rounded-full object-cover ml-3 border border-gray-600 hover:ring-2 hover:ring-blue-400 transition duration-300" onerror="this.onerror=null;this.src='${escapeAttr(POST_CARD_DEFAULT_AVATAR)}'">
+                        ${onlineDotHtml}
+                    </a>
+                    <div>
+                         <a href="/profile?userId=${escapeAttr(post.userId)}" class="text-white font-semibold hover:text-blue-400" onclick="event.stopPropagation()">${safeUsername} ${verifiedBadgeHtml}</a>
+                        <p class="text-gray-400 text-xs">${formatTimestamp(post.timestamp)}</p>
+                    </div>
+                </div>
+                ${menuButtonHtml}
+            </div>
+
+            <div class="post-content mt-2">
+                <div class="post-text" dir="auto">${formattedContent}</div>
+            </div>
+
+            ${mediaContent}
+
+            <div class="flex justify-between items-center text-gray-400 text-sm mt-3 pb-2 border-b border-gray-700">
+                <span><i class="fas fa-heart ml-1"></i> ${Number(post.likes || 0)} إعجاب</span>
+                <span class="cursor-pointer hover:text-blue-400 comment-count-display" onclick="handleComment('${escapeAttr(post.postId)}')"><i class="far fa-comment-dots ml-1"></i> ${post.commentsCount || 0} تعليق</span>
+            </div>
+
+            <div class="flex justify-around border-t border-gray-700 mt-3 pt-3">
+                <button class="flex items-center ${likeButtonClass} hover:text-red-600 transition duration-300 w-full justify-center post-like-button gap-2 heart-btn" 
+                        data-is-liked="${post.is_liked}" 
+                        onclick="handleLike('${escapeAttr(post.postId)}', this)">
+                    <i class="${likeIconClass} ml-2 like-icon text-lg"></i>
+                    <span class="text-sm font-medium">إعجاب</span>
+                </button>
+
+                <button class="flex items-center text-gray-400 hover:text-blue-500 transition duration-300 w-full justify-center gap-2" onclick="handleComment('${escapeAttr(post.postId)}')">
+                    <i class="fas fa-comment-dots text-lg"></i>
+                    <span class="text-sm font-medium">تعليق</span>
+                </button>
+
+                <button class="flex items-center text-gray-400 hover:text-blue-500 transition duration-300 w-full justify-center gap-2" onclick="copyPostLink('${escapeAttr(post.postId)}', event)">
+                    <i class="fas fa-link text-lg"></i>
+                    <span class="text-sm font-medium">نسخ</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// ============================================
+// Audio Functions
+// ============================================
+
+function setWSColors(ws, waveColor, progressColor) {
+    try {
+        if (typeof ws.setWaveColor === 'function') ws.setWaveColor(waveColor);
+        else if (ws.drawer && typeof ws.drawer.setWaveColor === 'function') ws.drawer.setWaveColor(waveColor);
+    } catch (e) {}
+    try {
+        if (typeof ws.setProgressColor === 'function') ws.setProgressColor(progressColor);
+        else if (ws.drawer && typeof ws.drawer.setProgressColor === 'function') ws.drawer.setProgressColor(progressColor);
+    } catch (e) {}
+}
+
+function redrawWS(ws) {
+    try {
+        if (typeof ws.drawBuffer === 'function') {
+            ws.drawBuffer();
+            return;
+        }
+        if (ws.drawer && typeof ws.drawer.drawBuffer === 'function') {
+            ws.drawer.drawBuffer();
+            return;
+        }
+        if (typeof ws.getDuration === 'function' && ws.getDuration() > 0) {
+            const d = ws.getDuration();
+            const current = ws.getCurrentTime ? ws.getCurrentTime() : 0;
+            ws.seekTo(Math.min(1, (current + 0.0001) / (d || 1)));
+            ws.seekTo(Math.min(1, current / (d || 1)));
+        }
+    } catch (e) {}
+}
+
+function initializePostWaveSurfer(postId, url) {
+    const container = document.getElementById(`waveform-${postId}`);
+    if (!container) return;
+
+    const ws = WaveSurfer.create({
+        container: container,
+        waveColor: '#4A4A4A',
+        progressColor: '#ffffff',
+        cursorColor: 'transparent',
+        barWidth: 3,
+        barRadius: 3,
+        barGap: 1,
+        height: 60,
+        responsive: true,
+        mediaControls: false,
+    });
+
+    postCardAudioWaveSurfers[postId] = ws;
+
+    try { ws.load(url); } catch(e){}
+
+    const postCard = container.closest('.glass-post-card');
+    const playButton = postCard ? postCard.querySelector('.audio-play-button') : null;
+
+    if (playButton) {
+        playButton.onclick = () => {
+            if (postCardActiveWaveSurfer && postCardActiveWaveSurfer !== ws) {
+                try { postCardActiveWaveSurfer.pause(); } catch(e){}
+                const otherPostCard = postCardActiveWaveSurfer.container.closest('.glass-post-card');
+                if (otherPostCard) {
+                    const pb = otherPostCard.querySelector('.audio-play-button i');
+                    if (pb) { pb.classList.remove('fa-pause'); pb.classList.add('fa-play'); }
+                }
+            }
+            if (postCardActiveVideo) {
+                const activePostId = postCardActiveVideo.id.split('-')[1];
+                const playOverlay = document.getElementById(`play-overlay-${activePostId}`);
+                postCardActiveVideo.pause();
+                if (playOverlay) playOverlay.classList.remove('hidden');
+                postCardActiveVideo = null;
+            }
+            
+            if (ws.isPlaying()) {
+                ws.pause();
+                playButton.querySelector('i').classList.remove('fa-pause');
+                playButton.querySelector('i').classList.add('fa-play');
+            } else {
+                ws.play();
+                playButton.querySelector('i').classList.remove('fa-play');
+                playButton.querySelector('i').classList.add('fa-pause');
+                postCardActiveWaveSurfer = ws;
+            }
+        };
+
+        ws.on('play', () => {
+            setWSColors(ws, '#6b7280', '#ffffff');
+            redrawWS(ws);
+        });
+
+        ws.on('pause', () => {
+            setWSColors(ws, '#ffffff', '#ffffff');
+            redrawWS(ws);
+            const btn = playButton;
+            if (btn) {
+                btn.querySelector('i').classList.remove('fa-pause');
+                btn.querySelector('i').classList.add('fa-play');
+            }
+            if (postCardActiveWaveSurfer === ws) postCardActiveWaveSurfer = null;
+        });
+
+        ws.on('finish', () => {
+            setWSColors(ws, '#ffffff', '#ffffff');
+            redrawWS(ws);
+            const btn = playButton;
+            if (btn) btn.querySelector('i').classList.remove('fa-pause'), btn.querySelector('i').classList.add('fa-play');
+            try { ws.seekTo(0); } catch(e){}
+            postCardActiveWaveSurfer = null;
+        });
+
+        ws.on('audioprocess', (time) => {
+            try {
+                const duration = ws.getDuration ? ws.getDuration() : 0;
+                if (duration > 0 && time / duration > 0.995) {
+                    setWSColors(ws, '#ffffff', '#ffffff');
+                    redrawWS(ws);
+                }
+            } catch(e){}
+        });
+    }
+}
+
+function toggleAudioPlay(postId) {
+    const ws = postCardAudioWaveSurfers[postId];
+    if (!ws) {
+        const container = document.getElementById(`waveform-${postId}`);
+        if (container && container.dataset && container.dataset.src) {
+            initializePostWaveSurfer(postId, container.dataset.src);
+        }
+    }
+    const wavesurfer = postCardAudioWaveSurfers[postId];
+    if (!wavesurfer) return;
+    if (wavesurfer.isPlaying()) wavesurfer.pause();
+    else wavesurfer.play();
+}
+
+// ============================================
+// Video Functions
+// ============================================
+
+function toggleVideoPlay(postId, event) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    const video = document.getElementById(`video-${postId}`);
+    const playOverlay = document.getElementById(`play-overlay-${postId}`);
+
+    if (!video) return;
+
+    if (postCardActiveVideo && postCardActiveVideo !== video) {
+        const activePostId = postCardActiveVideo.id.split('-')[1];
+        const activePlayOverlay = document.getElementById(`play-overlay-${activePostId}`);
+        try { postCardActiveVideo.pause(); } catch(e){}
+        if (activePlayOverlay) activePlayOverlay.classList.remove('hidden');
+        postCardActiveVideo = null;
+    }
+
+    if (postCardActiveWaveSurfer) {
+        try { postCardActiveWaveSurfer.pause(); } catch(e){}
+        const otherPostCard = postCardActiveWaveSurfer.container && postCardActiveWaveSurfer.container.closest ? postCardActiveWaveSurfer.container.closest('.glass-post-card') : null;
+        if (otherPostCard) {
+            const apb = otherPostCard.querySelector('.audio-play-button i');
+            if (apb) { apb.classList.remove('fa-pause'); apb.classList.add('fa-play'); }
+        }
+        postCardActiveWaveSurfer = null;
+    }
+    
+    if (video.paused) {
+        video.play().then(() => {
+            if (playOverlay) playOverlay.classList.add('hidden'); 
+            postCardActiveVideo = video;
+        }).catch((err) => {
+            console.warn('Video play failed', err);
+        });
+    } else {
+        video.pause();
+        if (playOverlay) playOverlay.classList.remove('hidden'); 
+        postCardActiveVideo = null;
+    }
+}
+
+function toggleFullscreen(postId, ev) {
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+    const video = document.getElementById(`video-${postId}`);
+    if (!video) return;
+    const container = video.closest('.video-large') || video;
+    if (container.requestFullscreen) {
+        container.requestFullscreen().catch(()=>{});
+    } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen().catch(()=>{});
+    }
+}
+
+// ============================================
+// Media Viewer
+// ============================================
+
+function openMediaViewer(url, type, event) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    if (type === 'audio' || type === 'video') return;
+
+    const modal = document.getElementById('mediaViewerModal');
+    const content = document.getElementById('mediaViewerContent');
+    content.innerHTML = '';
+    
+    if (type === 'image') {
+        content.innerHTML = `<img src="${escapeAttr(url)}" alt="Media Viewer" class="max-w-full max-h-full object-contain rounded-lg">`;
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeMediaViewer(event) {
+    if (event && (event.target.id === 'mediaViewerModal' || event.target.closest('.fa-times'))) {
+        const content = document.getElementById('mediaViewerContent');
+        const activeMedia = content.querySelector('video, audio');
+        if (activeMedia) activeMedia.pause();
+        document.getElementById('mediaViewerModal').classList.add('hidden');
+        content.innerHTML = '';
+    }
+}
+
+// ============================================
+// Like Function
+// ============================================
+
+async function handleLike(postId, buttonElement) {
+    const likeIcon = buttonElement.querySelector('.like-icon');
+    buttonElement.disabled = true;
+    try {
+        const res = await fetch(`/api/posts/${encodeURIComponent(postId)}/like`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            credentials: 'same-origin' 
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            if (data.action === 'liked') {
+                likeIcon.classList.remove('far', 'text-gray-400');
+                likeIcon.classList.add('fas', 'text-red-500');
+                buttonElement.classList.remove('text-gray-400');
+                buttonElement.classList.add('text-red-500');
+                buttonElement.setAttribute('data-is-liked', 'true');
+            } else {
+                likeIcon.classList.remove('fas', 'text-red-500');
+                likeIcon.classList.add('far', 'text-gray-400');
+                buttonElement.classList.remove('text-red-500');
+                buttonElement.classList.add('text-gray-400');
+                buttonElement.setAttribute('data-is-liked', 'false');
+            }
+            if (data.newLikes !== undefined) {
+                const postCard = document.querySelector(`div[data-post-id="${postId}"]`);
+                if (postCard) {
+                    const likesElem = postCard.querySelector('.flex.justify-between span:first-child');
+                    if (likesElem) likesElem.innerHTML = `<i class="fas fa-heart ml-1"></i> ${data.newLikes} إعجاب`;
+                }
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    } finally {
+        buttonElement.disabled = false;
+    }
+}
+
+// ============================================
+// Comments Functions
+// ============================================
+
+function handleComment(postId) {
+    postCardCurrentPostIdForComments = postId;
+    
+    const myPic = document.getElementById('userProfilePic');
+    const inputAvatar = document.getElementById('myCurrentAvatar');
+    if (inputAvatar && myPic) inputAvatar.src = myPic.src || POST_CARD_DEFAULT_AVATAR;
+
+    const modal = document.getElementById('commentModal');
+    const content = document.getElementById('commentModalContent');
+    
+    modal.classList.remove('hidden');
+    setTimeout(() => content.classList.add('open'), 10);
+
+    fetchAndDisplayComments(postId);
+}
+
+function closeCommentModal() {
+    const modal = document.getElementById('commentModal');
+    const content = document.getElementById('commentModalContent');
+    
+    content.classList.remove('open');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        postCardCurrentPostIdForComments = null;
+        const input = document.getElementById('newCommentInput');
+        if (input) input.value = '';
+        const list = document.getElementById('commentsList');
+        if (list) list.innerHTML = '';
+        const badge = document.getElementById('commentCountBadge');
+        if (badge) badge.innerText = '0';
+    }, 300);
+}
+
+async function fetchAndDisplayComments(postId) {
+    const commentsListEl = document.getElementById('commentsList');
+    const badgeEl = document.getElementById('commentCountBadge');
+    
+    if (commentsListEl) commentsListEl.innerHTML = '<div class="flex justify-center py-8"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i></div>';
+    
+    try {
+        const response = await fetch(`/api/posts/${encodeURIComponent(postId)}/comments`, { credentials: 'same-origin' });
+        const result = await response.json();
+
+        if (response.ok && result.ok) {
+            if (commentsListEl) commentsListEl.innerHTML = '';
+            const comments = result.comments || [];
+            
+            if (badgeEl) badgeEl.innerText = comments.length;
+            updatePostCommentCount(postId, comments.length);
+
+            if (comments.length === 0) {
+                if (commentsListEl) {
+                    commentsListEl.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-10 text-gray-500 opacity-70">
+                            <i class="far fa-comments text-4xl mb-3"></i>
+                            <p class="text-sm">لا توجد تعليقات بعد.</p>
+                            <p class="text-xs">كن أول من يعلق!</p>
+                        </div>`;
+                }
+            } else {
+                if (commentsListEl) {
+                    const htmlBuffer = comments.map(c => createCommentHtml(c, postId)).join('');
+                    commentsListEl.innerHTML = htmlBuffer;
+                }
+            }
+        } else {
+            if (commentsListEl) commentsListEl.innerHTML = '<div class="text-center text-red-400 py-4 text-sm">فشل تحميل التعليقات.</div>';
+        }
+    } catch (error) {
+        console.error(error);
+        if (commentsListEl) commentsListEl.innerHTML = '<div class="text-center text-red-400 py-4 text-sm">خطأ في الاتصال.</div>';
+    }
+}
+
+function createCommentHtml(comment, postId) {
+    const user = comment.user || {};
+    const username = escapeHtml(user.username || comment.username || 'مستخدم');
+    const profilePic = escapeAttr(user.profile_picture_url || comment.profile_picture_url || POST_CARD_DEFAULT_AVATAR);
+    const verifiedPlaceholder = `<span class="badge-container" data-badge-user-id="${escapeAttr((user.userId || comment.userId || ''))}"></span>`;
+    const likedClass = comment.is_liked ? 'text-red-500' : 'text-gray-400';
+    const likeIcon = comment.is_liked ? 'fas' : 'far';
+
+    const repliesPreviewHtml = (comment.recentReplies && comment.recentReplies.length > 0) ? comment.recentReplies.map(r => `
+        <div class="reply-item">
+            <div class="flex items-start gap-2">
+                <img src="${escapeAttr(r.profile_picture_url || POST_CARD_DEFAULT_AVATAR)}" class="small-avatar flex-shrink-0" alt="${escapeHtml(r.username)}">
+                <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="text-xs font-bold text-white">${escapeHtml(r.username)}</div>
+                        </div>
+                        <div class="text-xs text-gray-500">${new Date(r.timestamp).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                    <div class="text-sm text-gray-200 mt-1">${escapeHtml(r.content)}</div>
+                </div>
+            </div>
+        </div>
+    `).join('') : '';
+
+    return `
+        <div class="comment-item" id="comment-${escapeAttr(comment.commentId)}" data-comment-id="${escapeAttr(comment.commentId)}">
+            <div class="flex items-start gap-3">
+                <img src="${profilePic}" class="w-8 h-8 rounded-full flex-shrink-0" alt="${username}" onclick="window.location.href='/profile?userId=${escapeAttr(user.userId || comment.userId || '')}'">
+                <div class="flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <div class="text-sm font-bold text-white">
+                                ${username} ${verifiedPlaceholder}
+                            </div>
+                            <div class="text-xs text-gray-500">${new Date(comment.timestamp).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}</div>
+                        </div>
+                        <div class="flex items-center gap-2 comment-actions">
+                            <button class="${likedClass} flex items-center gap-1 text-xs heart-btn" onclick="toggleCommentLike('${escapeAttr(postId)}', '${escapeAttr(comment.commentId)}', this)">
+                                <i class="${likeIcon} fa-heart"></i> <span class="like-count" id="comment-like-count-${escapeAttr(comment.commentId)}">${Number(comment.likes || 0)}</span>
+                            </button>
+                            <button class="text-gray-400 text-xs flex items-center gap-1" onclick="setupReply('${escapeAttr(comment.commentId)}', '${escapeAttr(username)}')">
+                                <i class="fas fa-reply"></i> رد
+                            </button>
+                            ${(comment.repliesCount || 0) > (comment.recentReplies ? comment.recentReplies.length : 0) ? 
+                                `<button class="flex items-center gap-1 px-2 py-1 rounded-full text-blue-400 text-xs" onclick="fetchAndShowAllReplies('${escapeAttr(postId)}', '${escapeAttr(comment.commentId)}', this)">
+                                    <i class="fas fa-angle-down"></i> عرض الردود (${comment.repliesCount})
+                                </button>` : ''}
+                        </div>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-200">${escapeHtml(comment.content)}</div>
+
+                    <div id="replies-container-${escapeAttr(comment.commentId)}" class="mt-3 space-y-2">
+                        ${repliesPreviewHtml}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function toggleCommentLike(postId, commentId, btnEl) {
+    btnEl.disabled = true;
+    try {
+        const res = await fetch(`/api/posts/${encodeURIComponent(postId)}/comments/${encodeURIComponent(commentId)}/like`, { 
+            method: 'POST', 
+            credentials: 'same-origin' 
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            const countEl = document.getElementById(`comment-like-count-${commentId}`);
+            if (countEl) countEl.textContent = data.likes;
+            const i = btnEl.querySelector('i');
+            if (i) {
+                if (data.is_liked) { i.classList.remove('far'); i.classList.add('fas'); }
+                else { i.classList.remove('fas'); i.classList.add('far'); }
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    } finally {
+        btnEl.disabled = false;
+    }
+}
+
+function setupReply(commentId, username) {
+    postCardCurrentReplyingTo = username;
+    postCardCurrentReplyCommentId = commentId;
+    
+    const newCommentInput = document.getElementById('newCommentInput');
+    const replyIndicator = document.getElementById('replyIndicator');
+    const replyingToUsername = document.getElementById('replyingToUsername');
+    
+    if (newCommentInput) {
+        newCommentInput.dataset.replyingTo = username;
+        newCommentInput.dataset.replyCommentId = commentId;
+        newCommentInput.placeholder = `رد على ${username}`;
+        newCommentInput.focus();
+    }
+    
+    if (replyingToUsername) replyingToUsername.textContent = username;
+    if (replyIndicator) replyIndicator.classList.remove('hidden');
+    
+    const commentElement = document.getElementById(`comment-${commentId}`);
+    if (commentElement) commentElement.classList.add('active-reply');
+}
+
+function cancelReply() {
+    postCardCurrentReplyingTo = null;
+    postCardCurrentReplyCommentId = null;
+    
+    const newCommentInput = document.getElementById('newCommentInput');
+    const replyIndicator = document.getElementById('replyIndicator');
+    
+    if (newCommentInput) {
+        newCommentInput.dataset.replyingTo = '';
+        newCommentInput.dataset.replyCommentId = '';
+        newCommentInput.placeholder = 'أضف تعليقاً...';
+    }
+    
+    if (replyIndicator) replyIndicator.classList.add('hidden');
+    
+    const activeComment = document.querySelector('.comment-item.active-reply');
+    if (activeComment) activeComment.classList.remove('active-reply');
+}
+
+async function postReply(postId, commentId) {
+    const input = document.getElementById(`reply-input-${commentId}`);
+    if (!input) return;
+    const content = input.value.trim();
+    if (!content) return;
+    input.disabled = true;
+    try {
+        const res = await fetch(`/api/posts/${encodeURIComponent(postId)}/comments/${encodeURIComponent(commentId)}/reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ content })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            await fetchAndDisplayComments(postId);
+        }
+    } catch (e) {
+        console.error(e);
+    } finally {
+        input.disabled = false;
+    }
+}
+
+async function fetchAndShowAllReplies(postId, commentId, triggerBtn) {
+    try {
+        if (triggerBtn) triggerBtn.disabled = true;
+        const res = await fetch(`/api/posts/${encodeURIComponent(postId)}/comments/${encodeURIComponent(commentId)}/replies`, { credentials: 'same-origin' });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            const container = document.getElementById(`replies-container-${commentId}`);
+            if (container) {
+                container.innerHTML = data.replies.map(r => `
+                    <div class="reply-item">
+                        <div class="flex items-start gap-2">
+                            <img src="${escapeAttr(r.profile_picture_url || POST_CARD_DEFAULT_AVATAR)}" class="small-avatar flex-shrink-0" alt="${escapeHtml(r.username)}">
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="text-xs font-bold text-white">${escapeHtml(r.username)}</div>
+                                    </div>
+                                    <div class="text-xs text-gray-500">${new Date(r.timestamp).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</div>
+                                </div>
+                                <div class="text-sm text-gray-200 mt-1">${escapeHtml(r.content)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            if (triggerBtn) triggerBtn.style.display = 'none';
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function postComment() {
+    const input = document.getElementById('newCommentInput');
+    const btn = document.getElementById('postCommentBtn');
+    const errorEl = document.getElementById('commentError');
+    
+    if (!input || !postCardCurrentPostIdForComments) return;
+    
+    const content = input.value.trim();
+    if (!content) return;
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+    if (errorEl) errorEl.classList.add('hidden');
+
+    try {
+        let endpoint = `/api/posts/${encodeURIComponent(postCardCurrentPostIdForComments)}/comment`;
+        let body = { content: content };
+        
+        if (postCardCurrentReplyCommentId) {
+            endpoint = `/api/posts/${encodeURIComponent(postCardCurrentPostIdForComments)}/comments/${encodeURIComponent(postCardCurrentReplyCommentId)}/reply`;
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(body)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.ok) {
+            await fetchAndDisplayComments(postCardCurrentPostIdForComments);
+            input.value = '';
+            input.focus();
+            cancelReply();
+        } else {
+            if (errorEl) {
+                errorEl.textContent = result.error || 'فشل الإرسال';
+                errorEl.classList.remove('hidden');
+            }
+        }
+    } catch (error) {
+        if (errorEl) {
+            errorEl.textContent = 'حدث خطأ';
+            errorEl.classList.remove('hidden');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-arrow-up text-sm"></i>';
+        }
+    }
+}
+
+function updatePostCommentCount(postId, count) {
+    const postCard = document.querySelector(`div[data-post-id="${postId}"]`);
+    if (postCard) {
+        const commentSpan = postCard.querySelector('.comment-count-display');
+        if (commentSpan) {
+            commentSpan.innerHTML = `<i class="far fa-comment-dots ml-1"></i> ${count} تعليق`;
+        }
+    }
+    const badgeEl = document.getElementById('commentCountBadge');
+    if (badgeEl && postCardCurrentPostIdForComments === postId) {
+        badgeEl.innerText = count;
+    }
+}
+
+// ============================================
+// Post Options (Bottom Sheet)
+// ============================================
+
+function togglePostMenu(postId, userId, event, menuButton) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    openPostOptionsModal(postId, userId);
+}
+
+async function openPostOptionsModal(postId, userId) {
+    postCardCurrentOptionsPostId = postId;
+    postCardCurrentOptionsUserId = userId;
+    
+    const postOptionsMessage = document.getElementById('postOptionsMessage');
+    const postOptionsDeleteBtn = document.getElementById('postOptionsDeleteBtn');
+    const postOptionsAddFriendBtn = document.getElementById('postOptionsAddFriendBtn');
+
+    if (postOptionsMessage) postOptionsMessage.classList.add('hidden');
+    if (postOptionsDeleteBtn) postOptionsDeleteBtn.style.display = 'none';
+    if (postOptionsAddFriendBtn) postOptionsAddFriendBtn.style.display = 'none';
+
+    if (postCardCurrentUserId && String(userId) === String(postCardCurrentUserId)) {
+        if (postOptionsDeleteBtn) postOptionsDeleteBtn.style.display = 'flex';
+    } else {
+        try {
+            const res = await fetch('/api/friends', { credentials: 'same-origin' });
+            if (res.ok) {
+                const data = await res.json();
+                const friends = Array.isArray(data.friends) ? data.friends.map(f => f.id || f.userId || f.uid) : [];
+                const isFriend = friends.includes(userId);
+                if (!isFriend && postOptionsAddFriendBtn) {
+                    postOptionsAddFriendBtn.style.display = 'flex';
+                }
+            } else {
+                if (postOptionsAddFriendBtn) postOptionsAddFriendBtn.style.display = 'flex';
+            }
+        } catch (err) {
+            if (postOptionsAddFriendBtn) postOptionsAddFriendBtn.style.display = 'flex';
+        }
+    }
+
+    const modal = document.getElementById('postOptionsModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closePostOptionsModal() {
+    const modal = document.getElementById('postOptionsModal');
+    const postOptionsMessage = document.getElementById('postOptionsMessage');
+    if (modal) modal.classList.add('hidden');
+    if (postOptionsMessage) postOptionsMessage.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    postCardCurrentOptionsPostId = null;
+    postCardCurrentOptionsUserId = null;
+}
+
+function confirmDeleteFromOptions(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!postCardCurrentOptionsPostId) return;
+    openDeleteModal(postCardCurrentOptionsPostId, e);
+    closePostOptionsModal();
+}
+
+async function addFriendFromOptions(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!postCardCurrentOptionsUserId) return;
+    
+    const postOptionsAddFriendBtn = document.getElementById('postOptionsAddFriendBtn');
+    const postOptionsMessage = document.getElementById('postOptionsMessage');
+    
+    if (postOptionsAddFriendBtn) postOptionsAddFriendBtn.disabled = true;
+    if (postOptionsMessage) postOptionsMessage.classList.add('hidden');
+
+    try {
+        const res = await fetch('/api/friends/request', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to_id: postCardCurrentOptionsUserId })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            if (postOptionsMessage) {
+                postOptionsMessage.textContent = 'تم إرسال طلب الصداقة.';
+                postOptionsMessage.classList.remove('hidden');
+            }
+            if (postOptionsAddFriendBtn) postOptionsAddFriendBtn.style.display = 'none';
+        } else {
+            const err = data && data.error ? data.error : 'فشل إرسال الطلب';
+            if (postOptionsMessage) {
+                postOptionsMessage.textContent = err;
+                postOptionsMessage.classList.remove('hidden');
+            }
+        }
+    } catch (err) {
+        if (postOptionsMessage) {
+            postOptionsMessage.textContent = 'خطأ في الاتصال.';
+            postOptionsMessage.classList.remove('hidden');
+        }
+    } finally {
+        if (postOptionsAddFriendBtn) postOptionsAddFriendBtn.disabled = false;
+    }
+}
+
+// ============================================
+// Delete Modal Functions
+// ============================================
+
+function openDeleteModal(postId, event) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    postCardCurrentPostIdToDelete = postId;
+    const deleteMessage = document.getElementById('deleteMessage');
+    const deleteModal = document.getElementById('deleteModal');
+    if (deleteMessage) deleteMessage.classList.add('hidden');
+    if (deleteModal) deleteModal.classList.remove('hidden');
+    const postMenu = document.getElementById('postMenu');
+    if (postMenu) postMenu.classList.add('hidden');
+}
+
+function setupDeleteModalListeners() {
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', () => {
+            const deleteModal = document.getElementById('deleteModal');
+            if (deleteModal) deleteModal.classList.add('hidden');
+            postCardCurrentPostIdToDelete = null;
+        });
+    }
+
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', async () => {
+            if (!postCardCurrentPostIdToDelete) return;
+
+            confirmDeleteBtn.disabled = true;
+            confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> جاري الحذف';
+            const deleteMessage = document.getElementById('deleteMessage');
+            if (deleteMessage) deleteMessage.classList.add('hidden');
+
+            try {
+                const response = await fetch(`/api/posts/${encodeURIComponent(postCardCurrentPostIdToDelete)}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin'
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.ok) {
+                    const el = document.querySelector(`div[data-post-id="${escapeAttr(postCardCurrentPostIdToDelete)}"]`);
+                    if (el) el.remove();
+                    const deleteModal = document.getElementById('deleteModal');
+                    if (deleteModal) deleteModal.classList.add('hidden');
+                } else {
+                    if (deleteMessage) {
+                        deleteMessage.textContent = result.error || 'فشل الحذف.';
+                        deleteMessage.classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                if (deleteMessage) {
+                    deleteMessage.textContent = 'حدث خطأ في الاتصال بالخادم.';
+                    deleteMessage.classList.remove('hidden');
+                }
+            } finally {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.innerHTML = 'تأكيد الحذف';
+                postCardCurrentPostIdToDelete = null;
+            }
+        });
+    }
+}
+
+// ============================================
+// Copy Post Link
+// ============================================
+
+function copyPostLink(postId, event) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    const url = `${window.location.origin}/post?id=${postId}`;
+    navigator.clipboard.writeText(url).then(() => {
+        showToast('تم نسخ الرابط');
+    });
+}
+
+function showToast(msg) {
+    let t = document.createElement('div');
+    t.className = 'toast show';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 200); }, 2000);
+}
+
+// ============================================
+// Setup Show More Buttons
+// ============================================
+
+function setupShowMoreButtons() {
+    document.querySelectorAll('.post-content').forEach(container => {
+        try {
+            const textEl = container.querySelector('.post-text');
+            if (!textEl) return;
+
+            const existingBtn = container.querySelector('.read-more-btn');
+            const existingFade = container.querySelector('.post-text-fade');
+            if (existingBtn) existingBtn.remove();
+            if (existingFade) existingFade.remove();
+
+            textEl.classList.add('collapsed');
+            textEl.classList.remove('expanded');
+
+            setTimeout(() => {
+                if (textEl.scrollHeight > textEl.clientHeight + 3) {
+                    const fade = document.createElement('div');
+                    fade.className = 'post-text-fade';
+                    container.appendChild(fade);
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'read-more-btn';
+                    btn.innerText = 'عرض المزيد';
+                    btn.setAttribute('aria-expanded', 'false');
+
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const expanded = textEl.classList.toggle('expanded');
+                        if (expanded) {
+                            textEl.classList.remove('collapsed');
+                            btn.innerText = 'عرض أقل';
+                            btn.setAttribute('aria-expanded', 'true');
+                            if (fade) fade.style.display = 'none';
+                        } else {
+                            textEl.classList.add('collapsed');
+                            btn.innerText = 'عرض المزيد';
+                            btn.setAttribute('aria-expanded', 'false');
+                            if (fade) fade.style.display = '';
+                            try { container.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e){}
+                        }
+                    });
+
+                    container.appendChild(btn);
+                } else {
+                    textEl.classList.remove('collapsed', 'expanded');
+                }
+            }, 80);
+        } catch (e) {
+            console.warn('showMore setup failed', e);
+        }
+    });
+
+    document.querySelectorAll('.post-text a').forEach(a => {
+        a.addEventListener('click', (ev) => {
+            if (ev && ev.stopPropagation) ev.stopPropagation();
+        });
+    });
+}
+
+// ============================================
+// Initialize Post Card Module
+// ============================================
+
+function initPostCardModule(options = {}) {
+    if (options.currentUserId) postCardCurrentUserId = options.currentUserId;
+    
+    setupDeleteModalListeners();
+
+    // Setup comment input enter key
+    const newCommentInput = document.getElementById('newCommentInput');
+    if (newCommentInput) {
+        newCommentInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); postComment(); }
+        });
+    }
+
+    // Setup post comment button
+    const postCommentBtn = document.getElementById('postCommentBtn');
+    if (postCommentBtn) {
+        postCommentBtn.addEventListener('click', postComment);
+    }
+
+    // Close post menu on outside click
+    document.addEventListener('click', (event) => {
+        const postMenu = document.getElementById('postMenu');
+        if (postMenu && !postMenu.contains(event.target) && !event.target.closest('.post-menu-button')) {
+            postMenu.classList.add('hidden');
+        }
+    });
+}
+
+// Auto-initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    setupDeleteModalListeners();
+});
 </script>
 
 </body>
