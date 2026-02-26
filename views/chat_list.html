@@ -11,17 +11,7 @@
     <link rel="icon" href="https://res.cloudinary.com/duixjs8az/image/upload/v1765127215/post_media/1765127215249-trimer.jpg" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Vibes&display=swap" rel="stylesheet">
-    <script>
-// Load post card component dynamically
-fetch('/post-card.html')
-    .then(r => r.text())
-    .then(html => {
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        document.body.appendChild(div);
-    })
-    .catch(err => console.error('Failed to load post-card component:', err));
-</script>
+
     <!-- Import Post Card Component -->
     <link rel="import" href="/post-card.html">
     
@@ -294,7 +284,7 @@ fetch('/post-card.html')
         <div class="relative group z-[60]"> 
             <button id="profileMenuButton" class="relative block focus:outline-none" onclick="toggleProfileDropdown(event)">
                 <span class="avatar-with-dot">
-                    <img id="userProfilePic" src="https://via.placeholder.com/40/3182CE/FFFFFF?text=P" alt="صورة الملف الشخصي" class="w-10 h-10 rounded-full border-2 border-blue-500 object-cover hover:ring-2 hover:ring-blue-400 transition duration-300 cursor-pointer">
+                    <img id="userProfilePic" src="https://res.cloudinary.com/duixjs8az/image/upload/v1765009560/post_media/1765009560909-default_profile.png" alt="صورة الملف الشخصي">
                     <span id="meOnlineDot" class="online-dot" style="display:none;"></span>
                 </span>
             </button>
@@ -484,8 +474,38 @@ function handleNotifClick(el) {
     </div>
 
     <!-- Include Post Card Component -->
-    <iframe src="/post-card.html" style="display:none;" onload="this.contentDocument.body.innerHTML && document.body.insertAdjacentHTML('beforeend', this.contentDocument.body.innerHTML)"></iframe>
 
+<script>
+// Load post-card component dynamically
+fetch('/post-card.html')
+    .then(r => r.text())
+    .then(html => {
+        // Extract styles
+        const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/);
+        if (styleMatch) {
+            const style = document.createElement('style');
+            style.textContent = styleMatch[1];
+            document.head.appendChild(style);
+        }
+        
+        // Extract HTML modals
+        const bodyMatch = html.match(/<body>([\s\S]*?)<\/body>/);
+        if (bodyMatch) {
+            const div = document.createElement('div');
+            div.innerHTML = bodyMatch[1];
+            document.body.appendChild(div);
+        }
+        
+        // Extract and execute scripts
+        const scriptMatches = html.matchAll(/<script>([\s\S]*?)<\/script>/g);
+        for (const match of scriptMatches) {
+            const script = document.createElement('script');
+            script.textContent = match[1];
+            document.body.appendChild(script);
+        }
+    })
+    .catch(err => console.error('Failed to load post-card component:', err));
+</script>
     <script>
         // Chat List specific variables
         let joiningFamilyId = null;
