@@ -11,7 +11,7 @@
     <link rel="icon" href="https://res.cloudinary.com/duixjs8az/image/upload/v1765127215/post_media/1765127215249-trimer.jpg" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Vibes&display=swap" rel="stylesheet">
-
+    
     <!-- Import Post Card Component -->
     <link rel="import" href="/post-card.html">
     
@@ -284,7 +284,7 @@
         <div class="relative group z-[60]"> 
             <button id="profileMenuButton" class="relative block focus:outline-none" onclick="toggleProfileDropdown(event)">
                 <span class="avatar-with-dot">
-                    <img id="userProfilePic" src="https://res.cloudinary.com/duixjs8az/image/upload/v1765009560/post_media/1765009560909-default_profile.png" alt="صورة الملف الشخصي">
+                    <img id="userProfilePic" src="https://via.placeholder.com/40/3182CE/FFFFFF?text=P" alt="صورة الملف الشخصي" class="w-10 h-10 rounded-full border-2 border-blue-500 object-cover hover:ring-2 hover:ring-blue-400 transition duration-300 cursor-pointer">
                     <span id="meOnlineDot" class="online-dot" style="display:none;"></span>
                 </span>
             </button>
@@ -473,9 +473,7 @@ function handleNotifClick(el) {
         </div>
     </div>
 
-    <!-- Include Post Card Component -->
-
-<script>
+  <script>
 // Load post-card component dynamically
 fetch('/post-card.html')
     .then(r => r.text())
