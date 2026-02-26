@@ -47,7 +47,51 @@
     </main>
 
     <!-- Include Post Card Component -->
-    <iframe src="/post-card.html" style="display:none;" onload="this.contentDocument.body.innerHTML && document.body.insertAdjacentHTML('beforeend', this.contentDocument.body.innerHTML)"></iframe>
+    <div id="postCardContainer"></div>
+    <script>
+        // Load post-card component and execute its scripts
+        (async function loadPostCardComponent() {
+            try {
+                const response = await fetch('/post-card.html');
+                if (!response.ok) throw new Error('Failed to load post-card.html');
+                const html = await response.text();
+                
+                // Parse the HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Inject styles
+                const styles = doc.querySelectorAll('style');
+                styles.forEach(style => {
+                    const newStyle = document.createElement('style');
+                    newStyle.textContent = style.textContent;
+                    document.head.appendChild(newStyle);
+                });
+                
+                // Inject HTML content (modals, etc.)
+                const container = document.getElementById('postCardContainer');
+                const divElements = doc.querySelectorAll('div');
+                divElements.forEach(div => {
+                    if (div.id) { // Only inject elements with IDs (modals)
+                        const newDiv = document.createElement('div');
+                        newDiv.innerHTML = div.outerHTML;
+                        container.appendChild(newDiv.firstChild);
+                    }
+                });
+                
+                // Execute scripts
+                const scripts = doc.querySelectorAll('script');
+                scripts.forEach(script => {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = script.textContent;
+                    document.body.appendChild(newScript);
+                });
+                
+            } catch (error) {
+                console.error('Error loading post-card component:', error);
+            }
+        })();
+    </script>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);

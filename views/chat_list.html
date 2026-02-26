@@ -473,37 +473,53 @@ function handleNotifClick(el) {
         </div>
     </div>
 
-  <script>
-// Load post-card component dynamically
-fetch('/post-card.html')
-    .then(r => r.text())
-    .then(html => {
-        // Extract styles
-        const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/);
-        if (styleMatch) {
-            const style = document.createElement('style');
-            style.textContent = styleMatch[1];
-            document.head.appendChild(style);
-        }
-        
-        // Extract HTML modals
-        const bodyMatch = html.match(/<body>([\s\S]*?)<\/body>/);
-        if (bodyMatch) {
-            const div = document.createElement('div');
-            div.innerHTML = bodyMatch[1];
-            document.body.appendChild(div);
-        }
-        
-        // Extract and execute scripts
-        const scriptMatches = html.matchAll(/<script>([\s\S]*?)<\/script>/g);
-        for (const match of scriptMatches) {
-            const script = document.createElement('script');
-            script.textContent = match[1];
-            document.body.appendChild(script);
-        }
-    })
-    .catch(err => console.error('Failed to load post-card component:', err));
-</script>
+    <!-- Include Post Card Component -->
+    <div id="postCardContainer"></div>
+    <script>
+        // Load post-card component and execute its scripts
+        (async function loadPostCardComponent() {
+            try {
+                const response = await fetch('/post-card.html');
+                if (!response.ok) throw new Error('Failed to load post-card.html');
+                const html = await response.text();
+                
+                // Parse the HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Inject styles
+                const styles = doc.querySelectorAll('style');
+                styles.forEach(style => {
+                    const newStyle = document.createElement('style');
+                    newStyle.textContent = style.textContent;
+                    document.head.appendChild(newStyle);
+                });
+                
+                // Inject HTML content (modals, etc.)
+                const container = document.getElementById('postCardContainer');
+                const divElements = doc.querySelectorAll('div');
+                divElements.forEach(div => {
+                    if (div.id) { // Only inject elements with IDs (modals)
+                        const newDiv = document.createElement('div');
+                        newDiv.innerHTML = div.outerHTML;
+                        container.appendChild(newDiv.firstChild);
+                    }
+                });
+                
+                // Execute scripts
+                const scripts = doc.querySelectorAll('script');
+                scripts.forEach(script => {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = script.textContent;
+                    document.body.appendChild(newScript);
+                });
+                
+            } catch (error) {
+                console.error('Error loading post-card component:', error);
+            }
+        })();
+    </script>
+
     <script>
         // Chat List specific variables
         let joiningFamilyId = null;
