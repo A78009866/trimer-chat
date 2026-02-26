@@ -12,36 +12,54 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Vibes&display=swap" rel="stylesheet">
     
-    <!-- استيراد نظام المنشورات -->
-    <link rel="import" href="/post.html">
+    <!-- Import Post Card Component -->
+    <link rel="import" href="/post-card.html">
     
     <style>
-        /* أنماط خاصة بالصفحة الرئيسية فقط */
         body {
             background-color: #000000;
             color: #e4e6eb;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
-            padding-bottom: 80px;
+            padding-bottom: 80px; 
             overflow-x: hidden;
         }
 
         .glass-navbar {
             background-color: rgba(30, 30, 30, 0.5);
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .app-logo { font-family: 'Montserrat', sans-serif; font-weight: 800; }
+        .app-logo {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+        }
 
         .glass-dropdown {
             background-color: rgba(30, 30, 30, 0.9);
             backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 1000;
         }
 
-        /* Families Section */
+        /* Header action buttons */
+        .header-actions { display:flex; gap:8px; align-items:center; }
+        .header-actions .action-btn {
+            background: rgba(255,255,255,0.04);
+            color: #e6eefb;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.06);
+            display:flex; gap:8px; align-items:center;
+            cursor:pointer;
+            font-weight:700;
+        }
+        .header-actions .action-btn:hover { background: rgba(255,255,255,0.06); }
+
+        /* Family section */
         .families-row {
             display: flex;
             gap: 12px;
@@ -52,8 +70,34 @@
         .families-row::-webkit-scrollbar { height: 8px; }
         .families-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 8px; }
 
-        .family-card, .create-family-card {
+        .create-family-card {
             min-width: 220px;
+            max-width: 220px;
+            height: 110px;
+            border-radius: 14px;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+            cursor: pointer;
+        }
+        .create-family-card .overlay {
+            position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.5));
+        }
+        .create-family-card .label {
+            position: relative; z-index: 2; text-align: center;
+        }
+
+        /* Enlarged/touch-friendly family card with horizontal scroll for long names */
+        .family-card {
+            min-width: 220px;
+            max-width: 260px;
             height: 130px;
             border-radius: 12px;
             background: rgba(20,20,20,0.6);
@@ -64,479 +108,541 @@
             align-items: center;
             cursor: pointer;
             box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+            overflow: hidden;
         }
-        .family-card img, .create-family-card {
-            width: 88px; height: 88px; border-radius: 12px; object-fit: cover;
+        .family-card img {
+            width: 88px; height: 88px; border-radius: 12px; object-fit: cover; flex-shrink: 0;
         }
-        .create-family-card {
-            background-size: cover;
-            background-position: center;
-            justify-content: center;
-            color: white;
-            position: relative;
-        }
-        .create-family-card .overlay {
-            position: absolute; inset: 0;
-            background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0.5));
+        .family-card .meta {
+            flex: 1; overflow: hidden;
         }
 
-        /* Reels */
+        /* Make name scrollable horizontally to allow showing long family names */
+        .family-card .meta .name {
+            font-weight: 800;
+            color: #fff;
+            white-space: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+        .family-card .meta .name::-webkit-scrollbar { height: 6px; }
+        .family-card .meta .name::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 6px; }
+
+        .family-card .meta .count {
+            font-size: 12px; color: #9ca3af; margin-top: 8px;
+        }
+
+        /* --- Reels Tray CSS (UPDATED: Bigger & clearer) --- */
         .reels-scroll-container {
             display: flex;
             gap: 14px;
             overflow-x: auto;
             padding: 14px 6px;
             margin: 14px 0;
+            -webkit-overflow-scrolling: touch;
         }
+        .reels-scroll-container::-webkit-scrollbar { height: 10px; }
+        .reels-scroll-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 8px; }
+
+        /* Increased size for reel cards for clarity */
         .reel-card-item {
-            width: 170px; height: 260px;
+            width: 170px;
+            height: 260px;
             border-radius: 14px;
             background: #111;
             position: relative;
             overflow: hidden;
             cursor: pointer;
             border: 1px solid rgba(255,255,255,0.08);
+            transition: transform 0.18s, box-shadow 0.18s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
             flex-shrink: 0;
         }
-        .reel-card-item img { width: 100%; height: 100%; object-fit: cover; }
+        .reel-card-item:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(0,0,0,0.7); }
 
-        /* Bottom Nav */
-        .glass-bottom-navbar {
-            background-color: rgba(30, 30, 30, 0.6);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 50;
+        /* poster image covers card to appear crisp */
+        .reel-card-item img {
+            height: 100%;
+            width: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            display: block;
+            margin: 0;
+            background: #000;
         }
+        .reel-card-item video {
+            display: none;
+            width: 100%; height: 100%; object-fit: cover;
+            pointer-events: none;
+        }
+
+        /* Center play icon over poster for affordance (slightly larger) */
+        .reel-play-icon {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .reel-play-icon i {
+            color: rgba(255,255,255,0.95);
+            font-size: 30px;
+            text-shadow: 0 4px 16px rgba(0,0,0,0.6);
+        }
+
+        .reel-card-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 50%;
+        }
+        .reel-user-avatar {
+            position: absolute; top: 10px; left: 10px;
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            border: 2px solid white;
+            z-index: 10;
+            overflow: hidden;
+            background: #000;
+        }
+        .reel-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
         /* Badges */
         #notifBadge, #msgBadge, #friendReqBadge {
-            position: absolute;
-            top: -6px; left: -6px;
-            min-width: 18px; height: 18px;
-            padding: 0 6px;
-            background: #ef4444;
+          position: absolute;
+          top: -6px;
+          left: -6px;
+          min-width: 18px;
+          height: 18px;
+          padding: 0 6px;
+          background: #ef4444;
+          color: #fff;
+          font-size: 12px;
+          font-weight: 700;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          line-height: 1;
+        }
+
+        /* View all families button style */
+        #viewAllFamiliesBtn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 6px 10px;
+            border-radius: 8px;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+        #viewAllFamiliesBtn:hover {
+            background: rgba(255,255,255,0.02);
             color: #fff;
-            font-size: 12px;
-            font-weight: 700;
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        .avatar-with-dot { position: relative; display: inline-flex; }
-        .online-dot {
-            position: absolute;
-            bottom: 2px; right: 2px;
-            width: 12px; height: 12px;
-            background: #22c55e;
-            border: 2px solid #000;
-            border-radius: 999px;
+        /* Modal animation */
+        .modal-animate-in {
+            animation: modalFadeIn 0.3s ease-out;
         }
 
-        /* Header Actions */
-        .header-actions { display: flex; gap: 8px; align-items: center; }
-        .header-actions .action-btn {
-            background: rgba(255,255,255,0.04);
-            color: #e6eefb;
-            padding: 8px 12px;
-            border-radius: 999px;
-            border: 1px solid rgba(255,255,255,0.06);
-            cursor: pointer;
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Create Modal */
-        #createModal .glass-comment-modal-content {
-            background: rgba(30,30,30,0.9);
-            border-radius: 16px;
-            max-width: 400px;
-        }
         .create-option-card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
         }
+
         .create-option-card:hover {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.5);
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen">
 
 <header class="sticky top-0 z-50 glass-navbar p-3">
-    <nav class="flex justify-between items-center max-w-6xl mx-auto">
+    <nav class="flex justify-between items-center max-w-6xl mx-auto relative">
+        
         <div class="relative group z-[60]"> 
-            <button id="profileMenuButton" onclick="toggleProfileDropdown(event)">
+            <button id="profileMenuButton" class="relative block focus:outline-none" onclick="toggleProfileDropdown(event)">
                 <span class="avatar-with-dot">
-                    <img id="userProfilePic" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-full border-2 border-blue-500 object-cover">
-                    <span id="meOnlineDot" class="online-dot hidden"></span>
+                    <img id="userProfilePic" src="https://via.placeholder.com/40/3182CE/FFFFFF?text=P" alt="صورة الملف الشخصي" class="w-10 h-10 rounded-full border-2 border-blue-500 object-cover hover:ring-2 hover:ring-blue-400 transition duration-300 cursor-pointer">
+                    <span id="meOnlineDot" class="online-dot" style="display:none;"></span>
                 </span>
             </button>
-            <div id="profileDropdown" class="absolute top-12 right-0 mt-2 w-52 rounded-xl glass-dropdown hidden">
-                <a href="/profile" class="flex items-center px-4 py-3 text-white hover:bg-white/10">
-                    <i class="fas fa-user text-blue-400 ml-3"></i>
-                    <span>الملف الشخصي</span>
+
+            <div id="profileDropdown" class="absolute top-12 right-0 mt-2 w-52 rounded-xl shadow-2xl glass-dropdown hidden border border-gray-700 bg-black/95 backdrop-blur-lg z-[70] overflow-hidden">
+                
+                <a href="/profile" class="flex items-center px-4 py-4 text-white hover:bg-white/10 transition duration-200">
+                    <div class="bg-blue-500/20 p-2 rounded-lg ml-3">
+                        <i class="fas fa-user text-blue-400"></i>
+                    </div>
+                    <span class="text-sm font-semibold">الملف الشخصي</span>
                 </a>
-                <a href="/settings" class="flex items-center px-4 py-3 text-white hover:bg-white/10 border-t border-gray-800">
-                    <i class="fas fa-cog text-gray-400 ml-3"></i>
-                    <span>الإعدادات</span>
+                
+                <div class="border-t border-gray-800 mx-2"></div>
+
+                <a href="/settings" class="flex items-center px-4 py-4 text-white hover:bg-white/10 transition duration-200">
+                    <div class="bg-gray-500/20 p-2 rounded-lg ml-3">
+                        <i class="fas fa-cog text-gray-400"></i>
+                    </div>
+                    <span class="text-sm font-semibold">الإعدادات</span>
                 </a>
             </div>
         </div>
 
-        <a href="/chat_list" class="text-3xl font-extrabold text-white tracking-widest app-logo">Aite</a>
+        <div class="flex-grow flex justify-center">
+            <a href="/chat_list" class="text-3xl font-extrabold text-white tracking-widest hover:text-gray-300 transition duration-300 app-logo">
+                Aite
+            </a>
+        </div>
 
-        <div class="header-actions">
-            <button onclick="window.location.href='/search'" class="action-btn">
+        <div class="header-actions flex items-center gap-2">
+            <button id="searchBtn" class="action-btn p-2 text-gray-300 hover:text-white transition" title="بحث" onclick="openSearchPage()">
                 <i class="fas fa-search text-xl"></i>
             </button>
-            <button onclick="toggleCreateModal()" class="action-btn">
+
+            <button id="createBtn" class="action-btn p-2 text-gray-300 hover:text-white transition" title="إنشاء" onclick="toggleCreateModal()">
                 <i class="fas fa-plus text-xl"></i>
             </button>
         </div>
+
     </nav>
 </header>
 
-<main class="max-w-6xl mx-auto p-4">
-    <!-- Families Section -->
-    <div class="max-w-xl mx-auto mt-4">
-        <div class="flex items-center justify-between mb-2">
-            <h2 class="text-white font-bold">العائلات</h2>
-            <button onclick="window.location.href='/families'" class="text-sm text-gray-400 hover:text-white">عرض الكل</button>
-        </div>
-        <div id="familiesRow" class="families-row"></div>
-    </div>
-
-    <!-- Reels Section -->
-    <div id="reelsSection" class="max-w-xl mx-auto mt-4"></div>
-
-    <!-- Posts Feed -->
-    <div id="postsFeed" class="max-w-xl mx-auto mt-6 space-y-4"></div>
-</main>
-
-<!-- Bottom Navigation -->
-<nav class="glass-bottom-navbar h-14">
-    <div class="flex justify-around items-center max-w-lg mx-auto h-full">
-        <a href="/chat_list" class="flex flex-col items-center text-blue-400">
-            <i class="fas fa-home text-xl"></i>
-        </a>
-        <a href="/users_list" class="flex flex-col items-center text-gray-400 hover:text-white relative">
-            <i class="fas fa-comment-dots text-xl"></i>
-            <span id="msgBadge" class="hidden">0</span>
-        </a>
-        <a href="/reels" class="flex flex-col items-center text-gray-400 hover:text-white">
-            <i class="fas fa-clapperboard text-xl"></i>
-        </a>
-        <a href="/notifications" class="flex flex-col items-center text-gray-400 hover:text-white relative">
-            <i class="fas fa-bell text-xl"></i>
-            <span id="notifBadge" class="hidden">0</span>
-        </a>
-        <a href="/all_users" class="flex flex-col items-center text-gray-400 hover:text-white relative">
-            <i class="fas fa-users text-xl"></i>
-            <span id="friendReqBadge" class="hidden">0</span>
-        </a>
-    </div>
-</nav>
-
-<!-- Create Modal -->
-<div id="createModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);" onclick="toggleCreateModal()">
-    <div class="p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-white/20" style="background: rgba(30,30,30,0.9);" onclick="event.stopPropagation()">
-        <div class="flex justify-between items-center mb-8">
-            <h3 class="text-2xl font-bold text-white">ماذا تريد أن تنشر؟</h3>
-            <button onclick="toggleCreateModal()" class="text-gray-400 hover:text-white text-2xl">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="grid grid-cols-1 gap-4">
-            <a href="/create-post" class="create-option-card flex items-center p-5 rounded-2xl">
-                <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center ml-4">
-                    <i class="fas fa-file-alt text-blue-400 text-xl"></i>
-                </div>
-                <div>
-                    <span class="block text-white font-bold text-lg">منشور جديد</span>
-                    <span class="block text-gray-400 text-sm">شارك أفكارك وصورك</span>
-                </div>
-            </a>
-            <a href="/create-reel" class="create-option-card flex items-center p-5 rounded-2xl">
-                <div class="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center ml-4">
-                    <i class="fas fa-video text-purple-400 text-xl"></i>
-                </div>
-                <div>
-                    <span class="block text-white font-bold text-lg">ريلز</span>
-                    <span class="block text-gray-400 text-sm">فيديو قصير</span>
-                </div>
-            </a>
-        </div>
-    </div>
-</div>
-
-<!-- Family Join Modal -->
-<div id="familyJoinModal" class="hidden fixed inset-0 z-60 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);">
-    <div class="bg-[#0f1724] max-w-md w-full rounded-xl p-6 border border-gray-700">
-        <h3 class="text-lg font-bold text-white mb-4">الانضمام إلى العائلة</h3>
-        <input id="familyJoinInput" class="w-full p-3 rounded-lg bg-[#081019] border border-gray-700 text-white mb-3" placeholder="رمز العائلة">
-        <div class="flex gap-3">
-            <button onclick="confirmJoinFamily()" class="flex-1 p-3 bg-blue-600 rounded-lg text-white">انضم الآن</button>
-            <button onclick="closeJoinModal()" class="flex-1 p-3 bg-gray-700 rounded-lg text-white">إلغاء</button>
-        </div>
-    </div>
-</div>
-
 <script>
-// ==================== دوال مساعدة ====================
-
-function toggleProfileDropdown(e) {
-    e.stopPropagation();
-    document.getElementById('profileDropdown').classList.toggle('hidden');
-}
-
-document.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('profileDropdown');
-    const button = document.getElementById('profileMenuButton');
-    if (dropdown && !dropdown.classList.contains('hidden')) {
-        if (!button.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.classList.add('hidden');
-        }
+    // Profile dropdown functions
+    function toggleProfileDropdown(event) {
+        if (event && event.stopPropagation) event.stopPropagation();
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown) dropdown.classList.toggle('hidden');
     }
-});
 
-function toggleCreateModal() {
-    const modal = document.getElementById('createModal');
-    modal.classList.toggle('hidden');
-    document.body.style.overflow = modal.classList.contains('hidden') ? 'auto' : 'hidden';
-}
-
-// ==================== Families ====================
-
-const DEFAULT_FAM_IMG = "https://plus.unsplash.com/premium_vector-1682298522309-88e4dc1ccc4d?q=80&w=1125&auto=format&fit=crop";
-
-async function loadFamilies() {
-    const container = document.getElementById('familiesRow');
-    
-    try {
-        const res = await fetch('/api/families', { credentials: 'same-origin' });
-        const data = await res.json();
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('profileDropdown');
+        const button = document.getElementById('profileMenuButton');
         
-        let html = `
-            <div class="create-family-card" style="background-image: url('${DEFAULT_FAM_IMG}');" onclick="window.location.href='/create-family'">
-                <div class="overlay"></div>
-                <div class="text-center">
-                    <div class="text-sm font-semibold">إنشاء عائلة</div>
-                    <div class="text-xs text-gray-200 mt-1">بناء مساحة خاصة</div>
-                </div>
-            </div>
-        `;
-        
-        if (data.ok && data.families) {
-            html += data.families.map(f => `
-                <div class="family-card" onclick="onFamilyClick('${f.familyId || f.id}', ${f.is_member})">
-                    <img src="${f.imageUrl && !f.imageUrl.includes('placeholder') ? f.imageUrl : DEFAULT_FAM_IMG}" 
-                        onerror="this.src='${DEFAULT_FAM_IMG}'">
-                    <div>
-                        <div class="font-bold text-white whitespace-nowrap overflow-hidden">${f.name}</div>
-                        <div class="text-xs text-gray-400 mt-1">${f.membersCount || 0} عضو</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        container.innerHTML = html;
-    } catch (e) {
-        console.error('Failed to load families', e);
-    }
-}
-
-function onFamilyClick(id, isMember) {
-    if (isMember) {
-        window.location.href = `/family/${id}`;
-    } else {
-        document.getElementById('familyJoinModal').classList.remove('hidden');
-    }
-}
-
-function closeJoinModal() {
-    document.getElementById('familyJoinModal').classList.add('hidden');
-}
-
-async function confirmJoinFamily() {
-    // تنفيذ الانضمام للعائلة
-}
-
-// ==================== Reels ====================
-
-async function loadReels() {
-    try {
-        const res = await fetch('/api/reels/feed', { credentials: 'include' });
-        const data = await res.json();
-        
-        if (!data.ok || !data.reels?.length) return;
-        
-        // خلط عشوائي
-        const reels = data.reels.sort(() => Math.random() - 0.5);
-        
-        const html = `
-            <div class="flex items-center gap-2 mb-2 px-2">
-                <i class="fas fa-clapperboard text-pink-500"></i>
-                <span class="font-bold text-white text-sm">ريلز مقترحة</span>
-            </div>
-            <div class="reels-scroll-container">
-                ${reels.slice(0, 5).map(r => `
-                    <div class="reel-card-item" onclick="window.location.href='/reels?id=${r.reelId}'">
-                        <img src="${r.thumbnailUrl || r.posterUrl || ''}" 
-                            onerror="this.style.background='#000'">
-                        <div class="absolute top-2 left-2 w-8 h-8 rounded-full border-2 border-white overflow-hidden">
-                            <img src="${r.user?.profile_picture_url || ''}" class="w-full h-full object-cover">
-                        </div>
-                        <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                            <span class="text-white text-xs font-bold">@${r.user?.username || 'user'}</span>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-        
-        document.getElementById('reelsSection').innerHTML = html;
-    } catch (e) {
-        console.error('Failed to load reels', e);
-    }
-}
-
-// ==================== Posts (باستخدام PostSystem) ====================
-
-async function loadPosts() {
-    const container = document.getElementById('postsFeed');
-    container.innerHTML = '<div class="text-center text-gray-500 p-4"><i class="fas fa-spinner fa-spin mr-2"></i> جاري التحميل...</div>';
-    
-    try {
-        const res = await fetch('/api/posts', { credentials: 'same-origin' });
-        const data = await res.json();
-        
-        if (!data.ok) {
-            container.innerHTML = '<div class="text-center text-red-500 p-4">فشل تحميل المنشورات</div>';
-            return;
-        }
-        
-        const posts = (data.posts || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        
-        if (!posts.length) {
-            container.innerHTML = '<div class="text-center text-gray-500 p-4">لا توجد منشورات بعد</div>';
-            return;
-        }
-        
-        container.innerHTML = '';
-        const audioPosts = [];
-        
-        // جلب بيانات التوثيق للمستخدمين
-        const userIds = [...new Set(posts.map(p => p.userId))];
-        const verifiedMap = {};
-        
-        await Promise.all(userIds.map(async (uid) => {
-            try {
-                const r = await fetch(`/api/profile?userId=${uid}`, { credentials: 'same-origin' });
-                const u = await r.json();
-                if (u.ok) verifiedMap[uid] = u.is_verified;
-            } catch (e) {}
-        }));
-        
-        posts.forEach((post, index) => {
-            // إضافة بيانات التوثيق
-            post.user = post.user || {};
-            post.user.is_verified = verifiedMap[post.userId] || post.user.is_verified;
-            
-            // إنشاء المنشور باستخدام PostSystem
-            const postEl = PostSystem.render(post);
-            container.appendChild(postEl);
-            
-            // تتبع المنشورات الصوتية للتهيئة
-            if (post.media?.type === 'audio') {
-                audioPosts.push({ id: post.postId, url: post.media.url });
-            }
-        });
-        
-        // تهيئة مشغلات الصوت
-        setTimeout(() => {
-            audioPosts.forEach(p => PostSystem.initAudio(p.id, p.url));
-        }, 100);
-        
-    } catch (e) {
-        console.error('Failed to load posts', e);
-        container.innerHTML = '<div class="text-center text-red-500 p-4">خطأ في الاتصال</div>';
-    }
-}
-
-// ==================== Badges & Notifications ====================
-
-async function loadBadges() {
-    try {
-        // الإشعارات
-        const notifRes = await fetch('/api/notifications/unread_count', { credentials: 'same-origin' });
-        const notifData = await notifRes.json();
-        if (notifData.ok && notifData.unread_count > 0) {
-            const badge = document.getElementById('notifBadge');
-            badge.textContent = notifData.unread_count > 99 ? '99+' : notifData.unread_count;
-            badge.classList.remove('hidden');
-        }
-        
-        // الرسائل
-        const chatsRes = await fetch('/api/chats', { credentials: 'same-origin' });
-        const chatsData = await chatsRes.json();
-        if (chatsData.ok && chatsData.chats) {
-            const unread = chatsData.chats.reduce((a, c) => a + (c.unread_count || 0), 0);
-            if (unread > 0) {
-                const badge = document.getElementById('msgBadge');
-                badge.textContent = unread > 99 ? '99+' : unread;
-                badge.classList.remove('hidden');
+        if (dropdown && !dropdown.classList.contains('hidden')) {
+            if (!button.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.add('hidden');
             }
         }
-        
-        // طلبات الصداقة
-        const frRes = await fetch('/api/friends/requests_count', { credentials: 'same-origin' });
-        const frData = await frRes.json();
-        if (frData.ok && frData.count > 0) {
-            const badge = document.getElementById('friendReqBadge');
-            badge.textContent = frData.count > 99 ? '99+' : frData.count;
-            badge.classList.remove('hidden');
-        }
-    } catch (e) {
-        console.error('Failed to load badges', e);
+    });
+
+    // Update nav avatar
+    (function updateNavAvatar() {
+        fetch('/api/profile', { credentials: 'same-origin' })
+            .then(res => res.ok ? res.json() : null)
+            .then(user => {
+                if (user && user.profile_picture_url) {
+                    const el = document.getElementById('userProfilePic');
+                    if (el) el.src = user.profile_picture_url;
+                }
+            })
+            .catch(err => console.error("Error loading nav avatar:", err));
+    })();
+
+    function openSearchPage() {
+        window.location.href = '/search';
     }
-}
 
-// ==================== التهيئة ====================
-
-document.addEventListener('DOMContentLoaded', () => {
-    // تهيئة PostSystem
-    PostSystem.init();
-    
-    // تحميل البيانات
-    loadFamilies();
-    loadReels();
-    loadPosts();
-    loadBadges();
-    
-    // تحديث صورة المستخدم
-    fetch('/api/profile', { credentials: 'same-origin' })
-        .then(r => r.ok ? r.json() : null)
-        .then(user => {
-            if (user?.profile_picture_url) {
-                document.getElementById('userProfilePic').src = user.profile_picture_url;
-            }
-            if (user?.is_online) {
-                document.getElementById('meOnlineDot').classList.remove('hidden');
-            }
-        });
-    
-    // Heartbeat
-    setInterval(() => {
-        fetch('/api/status/heartbeat', { method: 'POST', credentials: 'same-origin' });
-    }, 60000);
-});
+    function toggleCreateModal() {
+        const createModalEl = document.getElementById('createModal');
+        createModalEl.classList.toggle('hidden');
+        if (!createModalEl.classList.contains('hidden')) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+    }
 </script>
 
+    <main class="max-w-6xl mx-auto p-4">
+        <div id="familiesWrapper" class="max-w-xl mx-auto mt-4">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-white font-bold">العائلات</h2>
+                <button id="viewAllFamiliesBtn" onclick="window.location.href='/families'">عرض كل العائلات</button>
+            </div>
+            <div id="familiesRow" class="families-row">
+                </div>
+        </div>
+
+        <div id="postsFeed" class="max-w-xl mx-auto mt-6 space-y-4">
+        </div>
+    </main>
+    
+    <div class="fixed bottom-0 left-0 right-0 z-50 glass-bottom-navbar">
+        <nav class="flex justify-around items-center max-w-lg mx-auto h-14 relative">
+            <a href="/chat_list" class="flex flex-col items-center justify-center p-2 text-blue-400">
+                <i class="fas fa-home text-xl"></i>
+            </a>
+            <a id="messagesBtn" href="/users_list" class="flex flex-col items-center justify-center p-2 text-gray-400 hover:text-white transition duration-300 relative">
+                <i class="fas fa-comment-dots text-xl"></i>
+                <span id="msgBadge" style="display:none">0</span>
+            </a>
+            <a href="/reels" class="flex flex-col items-center justify-center p-2 text-gray-400 hover:text-white transition duration-300">
+                <i class="fas fa-clapperboard text-xl"></i>
+            </a>
+            <a id="notifBtn" href="/notifications" onclick="handleNotifClick(this)" class="flex flex-col items-center justify-center p-2 text-gray-400 hover:text-white transition duration-300 relative">
+    <i class="fas fa-bell text-xl"></i>
+    <span id="notifBadge" style="display:none">0</span>
+</a>
+
+<script>
+function handleNotifClick(el) {
+    const badge = document.getElementById('notifBadge');
+    if (badge) {
+        badge.style.display = 'none';
+        badge.textContent = '0';
+    }
+}
+</script>
+
+            <a id="usersBtn" href="/all_users" class="flex flex-col items-center justify-center p-2 text-gray-400 hover:text-white transition duration-300 relative">
+                <i class="fas fa-users text-xl"></i>
+                <span id="friendReqBadge" style="display:none">0</span>
+            </a>
+        </nav>
+    </div>
+
+    <div id="familyJoinModal" class="hidden fixed inset-0 z-60 flex items-center justify-center p-4 glass-modal-bg" onclick="closeJoinModal(event)">
+      <div class="bg-[#0f1724] max-w-md w-full rounded-xl p-6 border border-gray-700" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold text-white">الانضمام إلى العائلة</h3>
+          <button class="text-gray-400 hover:text-white" onclick="closeJoinModal(event)"><i class="fas fa-times"></i></button>
+        </div>
+        <p id="familyJoinIntro" class="text-sm text-gray-300 mb-3">أدخل رمز العائلة للانضمام.</p>
+        <input id="familyJoinInput" class="w-full p-3 rounded-lg bg-[#081019] border border-gray-700 text-white mb-3" placeholder="رمز العائلة" />
+        <div id="familyJoinError" class="text-red-400 text-sm mb-2 hidden"></div>
+        <div class="flex gap-3">
+          <button id="familyJoinConfirmBtn" class="flex-1 p-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-white" onclick="confirmJoinFamily()">انضم الآن</button>
+          <button class="flex-1 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-white" onclick="closeJoinModal(event)">إلغاء</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="createModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 glass-modal-bg">
+        <div class="glass-comment-modal-content p-8 rounded-3xl shadow-2xl max-w-sm w-full modal-animate-in border border-white/20" style="position: relative; height: auto; transform: none; background-color: rgba(30,30,30,0.9);" onclick="event.stopPropagation()">
+            
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-2xl font-bold text-white">ماذا تريد أن تنشر؟</h3>
+                <button onclick="toggleCreateModal()" class="text-gray-400 hover:text-white transition text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <a href="/create-post" class="create-option-card flex items-center p-5 rounded-2xl group">
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center ml-4 group-hover:bg-blue-500/40 transition">
+                        <i class="fas fa-file-alt text-blue-400 text-xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <span class="block text-white font-bold text-lg">منشور جديد</span>
+                        <span class="block text-gray-400 text-sm">شارك أفكارك وصورك</span>
+                    </div>
+                </a>
+
+                <a href="/create-reel" class="create-option-card flex items-center p-5 rounded-2xl group">
+                    <div class="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center ml-4 group-hover:bg-purple-500/40 transition">
+                        <i class="fas fa-video text-purple-400 text-xl"></i>
+                    </div>
+                    <div class="text-right">
+                        <span class="block text-white font-bold text-lg">ريلز</span>
+                        <span class="block text-gray-400 text-sm">فيديو قصير </span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Post Card Component -->
+    <iframe src="/post-card.html" style="display:none;" onload="this.contentDocument.body.innerHTML && document.body.insertAdjacentHTML('beforeend', this.contentDocument.body.innerHTML)"></iframe>
+
+    <script>
+        // Chat List specific variables
+        let joiningFamilyId = null;
+        let commentsEventSource = null;
+
+        const familiesRow = document.getElementById('familiesRow');
+        const CREATE_FAMILY_BG = 'https://plus.unsplash.com/premium_vector-1682298522309-88e4dc1ccc4d?q=80&w=1125&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+        const DEFAULT_FAM_IMG = "https://plus.unsplash.com/premium_vector-1682298522309-88e4dc1ccc4d?q=80&w=1125&auto=format&fit=crop";
+
+        // Family functions
+        function renderCreateFamilyCard() {
+            return `
+                <div class="create-family-card" style="background-image: url('${escapeAttr(CREATE_FAMILY_BG)}');" onclick="onCreateFamilyClick()">
+                    <div class="overlay"></div>
+                    <div class="label">
+                        <div class="text-sm font-semibold">إنشاء عائلة</div>
+                        <div class="text-xs text-gray-200 mt-1">بناء مساحة خاصة للعائلة</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFamilyCard(f) {
+            const imgUrl = (f.imageUrl && f.imageUrl.length > 0 && !f.imageUrl.includes('placeholder')) 
+                           ? f.imageUrl 
+                           : DEFAULT_FAM_IMG;
+            
+            const members = f.membersCount || 0;
+            const isMember = f.is_member || false;
+            
+            const badge = isMember 
+                ? `<span class="text-xs text-green-400 font-semibold">عضو</span>` 
+                : `<span class="text-xs text-yellow-300 font-semibold">مقفل</span>`;
+
+            return `
+                <div class="family-card" onclick="onFamilyClick('${escapeAttr(f.id)}', ${isMember}, '${escapeAttr(f.name)}')">
+                    <img src="${escapeAttr(imgUrl)}" alt="${escapeAttr(f.name)}" loading="lazy">
+                    <div class="meta">
+                        <div class="name">${escapeHtml(f.name)}</div>
+                        <div class="count">${members} عضو</div>
+                        ${badge}
+                    </div>
+                </div>
+            `;
+        }
+
+        function onCreateFamilyClick() {
+            window.location.href = '/create-family';
+        }
+
+        function onFamilyClick(familyId, isMember, familyName) {
+            if (isMember) {
+                window.location.href = `/family/${encodeURIComponent(familyId)}`;
+            } else {
+                joiningFamilyId = familyId;
+                const modal = document.getElementById('familyJoinModal');
+                const intro = document.getElementById('familyJoinIntro');
+                const errorDiv = document.getElementById('familyJoinError');
+                if (intro) intro.textContent = `أدخل رمز عائلة "${familyName}" للانضمام.`;
+                if (errorDiv) errorDiv.classList.add('hidden');
+                if (modal) modal.classList.remove('hidden');
+            }
+        }
+
+        function closeJoinModal(e) {
+            const modal = document.getElementById('familyJoinModal');
+            if (modal) modal.classList.add('hidden');
+            joiningFamilyId = null;
+        }
+
+        async function confirmJoinFamily() {
+            const input = document.getElementById('familyJoinInput');
+            const errorDiv = document.getElementById('familyJoinError');
+            const code = input ? input.value.trim() : '';
+            if (!code) {
+                if (errorDiv) { errorDiv.textContent = 'الرجاء إدخال الرمز.'; errorDiv.classList.remove('hidden'); }
+                return;
+            }
+            if (!joiningFamilyId) return;
+            try {
+                const res = await fetch(`/api/families/${encodeURIComponent(joiningFamilyId)}/join`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+                if (res.ok && data.ok) {
+                    closeJoinModal();
+                    window.location.href = `/family/${encodeURIComponent(joiningFamilyId)}`;
+                } else {
+                    if (errorDiv) { errorDiv.textContent = data.error || 'فشل الانضمام.'; errorDiv.classList.remove('hidden'); }
+                }
+            } catch (e) {
+                if (errorDiv) { errorDiv.textContent = 'خطأ في الاتصال.'; errorDiv.classList.remove('hidden'); }
+            }
+        }
+
+        // Fetch and render families
+        async function fetchFamilies() {
+            try {
+                const res = await fetch('/api/families', { credentials: 'same-origin' });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.ok) return;
+                const list = data.families || [];
+                if (familiesRow) {
+                    familiesRow.innerHTML = renderCreateFamilyCard() + list.map(renderFamilyCard).join('');
+                }
+            } catch (e) {
+                console.error('Failed to load families', e);
+            }
+        }
+
+        // Fetch posts
+        async function fetchPosts() {
+            const postsFeed = document.getElementById('postsFeed');
+            if (!postsFeed) return;
+            
+            try {
+                const res = await fetch('/api/posts', { credentials: 'same-origin' });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.ok) return;
+                
+                const posts = data.posts || [];
+                if (posts.length === 0) {
+                    postsFeed.innerHTML = '<div class="text-center text-gray-500 p-8">لا توجد منشورات لعرضها.</div>';
+                    return;
+                }
+
+                postsFeed.innerHTML = '';
+                const audioPostsToInit = [];
+                
+                posts.forEach(post => {
+                    postsFeed.innerHTML += createPostCard(post);
+                    if (post.media && post.media.type === 'audio') {
+                        audioPostsToInit.push({ postId: post.postId, url: post.media.url });
+                    }
+                });
+
+                // Initialize audio players
+                setTimeout(() => {
+                    audioPostsToInit.forEach(ap => initializePostWaveSurfer(ap.postId, ap.url));
+                    setupShowMoreButtons();
+                }, 100);
+
+            } catch (e) {
+                console.error('Failed to load posts', e);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchFamilies();
+            fetchPosts();
+            
+            // Fetch current user
+            fetch('/api/profile', { credentials: 'same-origin' })
+                .then(res => res.ok ? res.json() : null)
+                .then(user => {
+                    if (user && user.id) {
+                        postCardCurrentUserId = user.id;
+                    }
+                })
+                .catch(err => console.error("Error loading user:", err));
+        });
+    </script>
 </body>
 </html>
