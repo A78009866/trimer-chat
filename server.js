@@ -39,6 +39,11 @@ const storage = new CloudinaryStorage({
       folderName = 'profile_pics';
     } else if (file.fieldname === 'cover_photo') {
       folderName = 'cover_photos';
+    } else if (file.fieldname === 'story_media' || url.includes('/api/stories')) {
+      // ملفات القصص تُخزن في مجلد stories
+      folderName = 'stories';
+    } else if (file.fieldname === 'family_image') {
+      folderName = 'families';
     } else if (url.includes('/messages/send')) {
       folderName = 'chat_media';
     } else if (url.includes('/api/posts/create')) {
@@ -162,6 +167,7 @@ app.get('/accounts', (req, res) => {
   return res.sendFile(path.join(__dirname, 'views', 'accounts.html'));
 });
 
+// (تمت المحافظة على روابط العرض الأساسية)
 app.get('/chat_list', requireAuth, (req, res) => { res.sendFile(path.join(__dirname, 'views', 'chat_list.html')); });
 app.get('/users_list', requireAuth, (req, res) => { res.sendFile(path.join(__dirname, 'views', 'users_list.html')); }); // friends (chats) list
 app.get('/all_users', requireAuth, (req, res) => { res.sendFile(path.join(__dirname, 'views', 'all_users.html')); }); // all users + requests
@@ -183,6 +189,7 @@ app.get('/create-reel', requireAuth, (req, res) => { res.sendFile(path.join(__di
 // Notifications page
 app.get('/notifications', requireAuth, (req, res) => { res.sendFile(path.join(__dirname, 'views', 'notifications.html')); });
 
+// انقل هذا الجزء للأعلى قليلاً في ملف server.js
 app.get('/settings', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'settings.html'));
 });
@@ -193,15 +200,361 @@ app.get('/admin', requireAuth, requireAdmin, (req, res) => {
   return res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
 
-app.get('/search', requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, 'views', 'search.html'));
+// ---------------- Stories: New feature replacing Families ----------------
+// Data model (Firebase RTDB):
+// stories/{storyId} = { storyId, userId, caption, media: {url,type,filename,mime}, music, createdAt, expiresAt, viewsCount }
+// user_stories/{userId}/{storyId} = true
+// story_viewers/{storyId}/{userId} = timestamp
+
+const STORY_DEFAULT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours by default
+
+// Create a story (multipart: story_media)
+app.post('/api/stories/create', requireAuth, upload.single('story_media'), async (req, res) => {
+  const userId = req.session.userId;
+  const { caption = '', music = '' } = req.body;
+  if (!req.file) return res.status(400).json({ ok: false, error: 'Media is required' });
+
+  try {
+    const newRef = db.ref('stories').push();
+    const storyId = newRef.key;
+    const createdAt = Date.now();
+    const expiresAt = createdAt + STORY_DEFAULT_TTL_MS;
+
+    const mime = req.file.mimetype || '';
+    let mediaType = 'file';
+    if (mime.startsWith('image/')) mediaType = 'image';
+    else if (mime.startsWith('video/')) mediaType = 'video';
+    else if (mime.startsWith('audio/')) mediaType = 'audio';
+
+    const media = {
+      url: req.file.path,
+      type: mediaType,
+      filename: req.file.originalname,
+      mime: mime
+    };
+
+    const storyData = {
+      storyId,
+      userId,
+      caption: String(caption).trim(),
+      media,
+      music: music ? String(music).trim() : null,
+      createdAt,
+      expiresAt,
+      viewsCount: 0
+    };
+
+    await newRef.set(storyData);
+    await db.ref(`user_stories/${userId}/${storyId}`).set(true);
+
+    res.json({ ok: true, storyId, story: storyData });
+  } catch (err) {
+    console.error('Error creating story:', err);
+    res.status(500).json({ ok: false, error: 'Failed to create story' });
+  }
 });
 
-app.get('/post.html', requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, 'views', 'post.html'));
+// Get current user's stories (active)
+app.get('/api/stories/my', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  try {
+    const snap = await db.ref('stories').orderByChild('userId').equalTo(userId).once('value');
+    const all = snap.val() || {};
+    const now = Date.now();
+    const stories = Object.values(all).filter(s => (s.expiresAt || now + 1) > now);
+    stories.sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+    res.json({ ok: true, stories });
+  } catch (e) {
+    console.error('Error fetching my stories', e);
+    res.status(500).json({ ok: false, error: 'Failed to fetch stories' });
+  }
 });
 
-// API: Get Single Post by ID
+// Get stories feed (grouped by user) - returns only still-active stories (unexpired).
+app.get('/api/stories/feed', requireAuth, async (req, res) => {
+  const now = Date.now();
+  try {
+    const snap = await db.ref('stories').once('value');
+    const obj = snap.val() || {};
+    // group by user and only include stories with expiresAt > now
+    const byUser = {};
+    Object.keys(obj).forEach(sid => {
+      const s = obj[sid];
+      if (!s || !s.userId) return;
+      const expires = Number(s.expiresAt || 0);
+      if (expires && expires <= now) return; // expired
+      if (!byUser[s.userId]) byUser[s.userId] = { userId: s.userId, stories: [] };
+      byUser[s.userId].stories.push(s);
+    });
+    // attach minimal user info for each group
+    const groups = [];
+    for (const uid of Object.keys(byUser)) {
+      const uSnap = await db.ref(`profiles/${uid}`).once('value');
+      const profile = uSnap.val() || {};
+      const storiesList = byUser[uid].stories.sort((a,b) => (a.createdAt||0) - (b.createdAt||0)); // older-first for playback sequence
+      groups.push({
+        userId: uid,
+        username: profile.username || 'مستخدم',
+        profile_picture_url: profile.profile_picture_url || DEFAULT_PROFILE_PIC_URL,
+        is_verified: !!profile.is_verified,
+        stories: storiesList
+      });
+    }
+    // sort groups: people with newest stories first
+    groups.sort((a,b) => {
+      const aLast = a.stories && a.stories.length ? (a.stories[a.stories.length-1].createdAt||0) : 0;
+      const bLast = b.stories && b.stories.length ? (b.stories[b.stories.length-1].createdAt||0) : 0;
+      return bLast - aLast;
+    });
+    res.json({ ok: true, groups });
+  } catch (err) {
+    console.error('Error fetching stories feed:', err);
+    res.status(500).json({ ok: false, error: 'Failed to fetch feed' });
+  }
+});
+
+// Get a single story
+app.get('/api/stories/:storyId', requireAuth, async (req, res) => {
+  const { storyId } = req.params;
+  if (!storyId) return res.status(400).json({ ok: false, error: 'storyId required' });
+  try {
+    const snap = await db.ref(`stories/${storyId}`).once('value');
+    if (!snap.exists()) return res.status(404).json({ ok: false, error: 'Story not found' });
+    const story = snap.val();
+    // if expired, return 404
+    if (story.expiresAt && Number(story.expiresAt) <= Date.now()) return res.status(404).json({ ok: false, error: 'Story expired' });
+    res.json({ ok: true, story });
+  } catch (err) {
+    console.error('Error fetching story:', err);
+    res.status(500).json({ ok: false });
+  }
+});
+
+// Mark a view on a story (current user watches it). increments viewsCount and records viewer.
+app.post('/api/stories/:storyId/view', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  const { storyId } = req.params;
+  if (!storyId) return res.status(400).json({ ok: false, error: 'storyId required' });
+
+  try {
+    const storyRef = db.ref(`stories/${storyId}`);
+    const storySnap = await storyRef.once('value');
+    if (!storySnap.exists()) return res.status(404).json({ ok: false });
+    const story = storySnap.val();
+
+    // don't double-count: if viewer already exists, only update timestamp
+    const viewerRef = db.ref(`story_viewers/${storyId}/${userId}`);
+    const existing = await viewerRef.once('value');
+    if (!existing.exists()) {
+      // increment viewsCount
+      await storyRef.child('viewsCount').transaction((c) => (c || 0) + 1);
+    }
+    await viewerRef.set(admin.database.ServerValue.TIMESTAMP);
+
+    // optional: create notification for owner (but do not spam)
+    try {
+      if (story.userId && story.userId !== userId) {
+        const fromProfileSnap = await db.ref(`profiles/${userId}`).once('value');
+        const fromProfile = fromProfileSnap.val() || {};
+        const notifRef = db.ref(`notifications/${story.userId}`).push();
+        const notifData = {
+          id: notifRef.key,
+          type: 'story_view',
+          from_user_id: userId,
+          from_username: fromProfile.username || 'مستخدم',
+          from_profile_picture_url: fromProfile.profile_picture_url || DEFAULT_PROFILE_PIC_URL,
+          storyId,
+          timestamp: admin.database.ServerValue.TIMESTAMP,
+          is_read: false
+        };
+        await notifRef.set(notifData);
+      }
+    } catch (nerr) {
+      console.error('Failed to create story_view notification:', nerr);
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error marking story view:', err);
+    res.status(500).json({ ok: false });
+  }
+});
+
+// Delete a story (only creator)
+app.delete('/api/stories/:storyId', requireAuth, async (req, res) => {
+  const userId = req.session.userId;
+  const { storyId } = req.params;
+  if (!storyId) return res.status(400).json({ ok: false, error: 'storyId required' });
+
+  try {
+    const storyRef = db.ref(`stories/${storyId}`);
+    const snap = await storyRef.once('value');
+    if (!snap.exists()) return res.status(404).json({ ok: false, error: 'Story not found' });
+    const story = snap.val();
+    if (story.userId !== userId) return res.status(403).json({ ok: false, error: 'Forbidden' });
+
+    // remove story and indexes
+    await storyRef.remove();
+    await db.ref(`user_stories/${userId}/${storyId}`).remove().catch(()=>{});
+    await db.ref(`story_viewers/${storyId}`).remove().catch(()=>{});
+
+    res.json({ ok: true, message: 'Story deleted' });
+  } catch (err) {
+    console.error('Error deleting story:', err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// Periodic cleaner to remove expired stories and their indices (runs every 5 minutes)
+setInterval(async () => {
+  try {
+    const now = Date.now();
+    const snap = await db.ref('stories').once('value');
+    const all = snap.val() || {};
+    const updates = {};
+    const toRemoveStoryIds = [];
+
+    Object.keys(all).forEach(storyId => {
+      const s = all[storyId];
+      if (!s) return;
+      const expires = Number(s.expiresAt || 0);
+      if (expires && expires <= now) {
+        toRemoveStoryIds.push(storyId);
+        updates[`stories/${storyId}`] = null;
+        updates[`story_viewers/${storyId}`] = null;
+        // also remove from user index
+        if (s.userId) updates[`user_stories/${s.userId}/${storyId}`] = null;
+      }
+    });
+
+    if (Object.keys(updates).length > 0) {
+      await db.ref().update(updates);
+      if (toRemoveStoryIds.length) {
+        console.log('Cleaned expired stories:', toRemoveStoryIds.length);
+      }
+    }
+  } catch (e) {
+    console.error('Story cleanup error', e);
+  }
+}, 5 * 60 * 1000); // every 5 minutes
+
+// ---------------- Helper: Friend Utilities ----------------
+async function areFriends(userA, userB) {
+  if (!userA || !userB) return false;
+  const snap = await db.ref(`friends/${userA}/${userB}`).once('value');
+  return snap.exists();
+}
+
+// ---------------- Helper: Normalize stored comments ----------------
+function normalizeStoredComment(val) {
+  // val: raw object from DB
+  const commentId = val.commentId || val.id || val.key || val.keyId || '';
+  const content = val.content || val.commentContent || val.text || '';
+  const timestamp = (typeof val.timestamp === 'number') ? val.timestamp : (val.timestamp ? Number(val.timestamp) : Date.now());
+
+  let user = {};
+  if (val.user && typeof val.user === 'object') {
+    user.userId = val.user.userId || val.user.id || val.user.uid || val.userId || '';
+    user.username = val.user.username || val.user.displayName || val.user.name || val.username || 'مستخدم';
+    user.profile_picture_url = val.user.profile_picture_url || val.user.photoURL || val.profile_picture_url || DEFAULT_PROFILE_PIC_URL;
+  } else {
+    user.userId = val.userId || val.userID || val.from_user_id || '';
+    user.username = val.username || val.from_username || 'مستخدم';
+    user.profile_picture_url = val.profile_picture_url || DEFAULT_PROFILE_PIC_URL;
+  }
+
+  user.userId = user.userId || '';
+  user.username = user.username || 'مستخدم';
+  user.profile_picture_url = user.profile_picture_url || DEFAULT_PROFILE_PIC_URL;
+
+  // include likes/replies counts if present (backwards compatible)
+  const likesCount = typeof val.likes === 'number' ? val.likes : (val.likesCount || 0);
+  const repliesCount = typeof val.repliesCount === 'number' ? val.repliesCount : (val.replies_count || 0);
+
+  return {
+    commentId,
+    postId: val.postId || '',
+    content,
+    timestamp,
+    user,
+    likes: likesCount || 0,
+    repliesCount: repliesCount || 0
+  };
+}
+
+// helper to count children in a snapshot
+function countSnapshotChildren(snap) {
+  let c = 0;
+  snap.forEach(() => c++);
+  return c;
+}
+
+// ---------------- API: Admin endpoints (existing) ----------------
+
+// Get all users (only admin)
+app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const snap = await db.ref('profiles').once('value');
+    const profiles = snap.val() || {};
+    const users = Object.values(profiles).map(u => ({
+      id: u.id,
+      username: u.username,
+      full_name: u.full_name,
+      email: u.email,
+      profile_picture_url: u.profile_picture_url || DEFAULT_PROFILE_PIC_URL,
+      is_online: !!u.is_online,
+      is_verified: !!u.is_verified,
+      bio: u.bio || ''
+    }));
+    res.json({ ok: true, users });
+  } catch (error) {
+    console.error('Error fetching admin users:', error);
+    res.status(500).json({ ok: false, error: 'فشل في جلب المستخدمين.' });
+  }
+});
+
+// Verify/unverify a user (only admin)
+// body: { verify: true/false }  (if omitted defaults to true)
+app.post('/api/admin/users/:userId/verify', requireAuth, requireAdmin, async (req, res) => {
+  const { userId } = req.params;
+  const verify = req.body && typeof req.body.verify !== 'undefined' ? !!req.body.verify : true;
+
+  if (!userId) return res.status(400).json({ ok: false, error: 'userId required' });
+
+  try {
+    const profileRef = db.ref(`profiles/${userId}`);
+    const snap = await profileRef.once('value');
+    if (!snap.exists()) return res.status(404).json({ ok: false, error: 'User not found' });
+
+    await profileRef.update({ is_verified: verify });
+
+    // optional: return updated profile
+    const updatedSnap = await profileRef.once('value');
+    const updatedProfile = updatedSnap.val();
+
+    res.json({ ok: true, user: { id: updatedProfile.id, username: updatedProfile.username, is_verified: !!updatedProfile.is_verified } });
+  } catch (error) {
+    console.error('Error updating verification:', error);
+    res.status(500).json({ ok: false, error: 'فشل في تحديث حالة التحقق.' });
+  }
+});
+
+// ---------------- Routes: Pages & Helpers (partials) ----------------
+// Update or remove any server-side partials that returned families earlier.
+// Provide a minimal partials/families route that redirects or returns story-based HTML to keep compatibility.
+
+app.get('/partials/families', requireAuth, async (req, res) => {
+  // This endpoint used to render families; keep backwards compatibility by returning a simple message or redirect.
+  // Redirecting to main chat content (client now shows stories tray).
+  res.redirect('/chat_list');
+});
+
+// If there was chat_content that included families, keep it but remove families content.
+// We'll return the existing posts partial (used by HTMX) - reuse the /partials/posts implementation below.
+
+// ---------------- Routes: Posts/Feed/Comments etc. (kept from original) ----------------
+
+// API: Get Single Post by ID (kept)
 app.get('/api/posts/one/:postId', requireAuth, async (req, res) => {
   const currentUserId = req.session.userId;
   const { postId } = req.params;
@@ -238,13 +591,11 @@ app.get('/api/posts/one/:postId', requireAuth, async (req, res) => {
     res.status(500).json({ ok: false });
   }
 });
-
 // دعم المسار القصير /post مع تمرير الاستعلامات (مثلاً /post?id=XYZ)
 app.get('/post', requireAuth, (req, res) => {
   const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
   return res.redirect(`/post.html${qs}`);
 });
-
 // API: بحث بسيط يجمع من posts, reels, profiles (فلترة بسيطة على الخادم)
 app.get('/api/search', requireAuth, async (req, res) => {
   try {
@@ -331,7 +682,6 @@ app.get('/api/search', requireAuth, async (req, res) => {
     res.status(500).json({ ok: false, error: 'Server error' });
   }
 });
-
 // --- helper: detect if client wants JSON (AJAX) ---
 function clientWantsJson(req) {
   return (req.xhr) || (req.headers.accept && req.headers.accept.indexOf('application/json') !== -1);
@@ -379,6 +729,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// استبدال مسار /register بالمعدّل: يرد JSON عند طلب AJAX، ويعطي رسائل خطأ واضحة
 app.post('/register', upload.fields([{ name: 'profile_picture' }, { name: 'cover_photo' }]), async (req, res) => {
   const wantsJson = clientWantsJson(req);
   const { username, password, full_name } = req.body;
@@ -511,238 +862,17 @@ app.post('/api/status/heartbeat', requireAuth, async (req, res) => {
   }
 });
 
-// ---------------- Helper: Friend Utilities ----------------
-async function areFriends(userA, userB) {
-  if (!userA || !userB) return false;
-  const snap = await db.ref(`friends/${userA}/${userB}`).once('value');
-  return snap.exists();
-}
+// ---------------- Helper: Family Utilities (REMOVED) ----------------
+// All family-specific helpers and middleware removed (feature replaced by Stories).
 
-// ---------------- Helper: Normalize stored comments ----------------
-function normalizeStoredComment(val) {
-  // val: raw object from DB
-  const commentId = val.commentId || val.id || val.key || val.keyId || '';
-  const content = val.content || val.commentContent || val.text || '';
-  const timestamp = (typeof val.timestamp === 'number') ? val.timestamp : (val.timestamp ? Number(val.timestamp) : Date.now());
+// ---------------- Helper: Normalize stored comments (already above) ----------------
+// (function normalizeStoredComment defined earlier)
 
-  let user = {};
-  if (val.user && typeof val.user === 'object') {
-    user.userId = val.user.userId || val.user.id || val.user.uid || val.userId || '';
-    user.username = val.user.username || val.user.displayName || val.user.name || val.username || 'مستخدم';
-    user.profile_picture_url = val.user.profile_picture_url || val.user.photoURL || val.profile_picture_url || DEFAULT_PROFILE_PIC_URL;
-  } else {
-    user.userId = val.userId || val.userID || val.from_user_id || '';
-    user.username = val.username || val.from_username || 'مستخدم';
-    user.profile_picture_url = val.profile_picture_url || DEFAULT_PROFILE_PIC_URL;
-  }
+// helper to count children in a snapshot (already defined earlier)
 
-  user.userId = user.userId || '';
-  user.username = user.username || 'مستخدم';
-  user.profile_picture_url = user.profile_picture_url || DEFAULT_PROFILE_PIC_URL;
+// ---------------- API: Admin endpoints (existing earlier) ----------------// (kept)
 
-  // include likes/replies counts if present (backwards compatible)
-  const likesCount = typeof val.likes === 'number' ? val.likes : (val.likesCount || 0);
-  const repliesCount = typeof val.repliesCount === 'number' ? val.repliesCount : (val.replies_count || 0);
-
-  return {
-    commentId,
-    postId: val.postId || '',
-    content,
-    timestamp,
-    user,
-    likes: likesCount || 0,
-    repliesCount: repliesCount || 0
-  };
-}
-
-// helper to count children in a snapshot
-function countSnapshotChildren(snap) {
-  let c = 0;
-  snap.forEach(() => c++);
-  return c;
-}
-
-// ---------------- API: Admin endpoints (جديد) ----------------
-
-// Get all users (only admin)
-app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const snap = await db.ref('profiles').once('value');
-    const profiles = snap.val() || {};
-    const users = Object.values(profiles).map(u => ({
-      id: u.id,
-      username: u.username,
-      full_name: u.full_name,
-      email: u.email,
-      profile_picture_url: u.profile_picture_url || DEFAULT_PROFILE_PIC_URL,
-      is_online: !!u.is_online,
-      is_verified: !!u.is_verified,
-      bio: u.bio || ''
-    }));
-    res.json({ ok: true, users });
-  } catch (error) {
-    console.error('Error fetching admin users:', error);
-    res.status(500).json({ ok: false, error: 'فشل في جلب المستخدمين.' });
-  }
-});
-
-// Verify/unverify a user (only admin)
-// body: { verify: true/false }  (if omitted defaults to true)
-app.post('/api/admin/users/:userId/verify', requireAuth, requireAdmin, async (req, res) => {
-  const { userId } = req.params;
-  const verify = req.body && typeof req.body.verify !== 'undefined' ? !!req.body.verify : true;
-
-  if (!userId) return res.status(400).json({ ok: false, error: 'userId required' });
-
-  try {
-    const profileRef = db.ref(`profiles/${userId}`);
-    const snap = await profileRef.once('value');
-    if (!snap.exists()) return res.status(404).json({ ok: false, error: 'User not found' });
-
-    await profileRef.update({ is_verified: verify });
-
-    // optional: return updated profile
-    const updatedSnap = await profileRef.once('value');
-    const updatedProfile = updatedSnap.val();
-
-    res.json({ ok: true, user: { id: updatedProfile.id, username: updatedProfile.username, is_verified: !!updatedProfile.is_verified } });
-  } catch (error) {
-    console.error('Error updating verification:', error);
-    res.status(500).json({ ok: false, error: 'فشل في تحديث حالة التحقق.' });
-  }
-});
-// ==========================================
-// مسارات نظام القصص (Stories)
-// ==========================================
-
-// 1. رفع قصة جديدة
-app.post('/api/stories', requireAuth, upload.single('media'), async (req, res) => {
-    try {
-        const userId = req.session.userId;
-        const userSnap = await db.ref(`profiles/${userId}`).once('value');
-        const userData = userSnap.val();
-
-        if (!userData) return res.status(404).json({ error: 'المستخدم غير موجود' });
-
-        const file = req.file;
-        if (!file) return res.status(400).json({ error: 'الرجاء إرفاق صورة أو فيديو' });
-
-        const mediaUrl = file.path;
-        const mediaType = file.mimetype.startsWith('video') ? 'video' : 'image';
-        const audioUrl = req.body.audioUrl || null; 
-
-        const newStoryRef = db.ref('stories').push();
-        const storyData = {
-            id: newStoryRef.key,
-            userId: userId,
-            username: userData.username || 'مستخدم',
-            profilePic: userData.profile_picture_url || DEFAULT_PROFILE_PIC_URL,
-            mediaUrl,
-            mediaType,
-            audioUrl,
-            timestamp: admin.database.ServerValue.TIMESTAMP,
-            likes: {}
-        };
-
-        await newStoryRef.set(storyData);
-        res.status(200).json({ success: true, story: storyData });
-    } catch (error) {
-        console.error('Story upload error:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء رفع القصة' });
-    }
-});
-
-// 2. جلب القصص (التي لم يمر عليها 24 ساعة)
-app.get('/api/stories', requireAuth, async (req, res) => {
-    try {
-        const storiesRef = db.ref('stories');
-        const snapshot = await storiesRef.once('value');
-        const stories = [];
-        const now = Date.now();
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-
-        snapshot.forEach(child => {
-            const story = child.val();
-            if (now - story.timestamp < ONE_DAY) {
-                stories.push(story);
-            } else {
-                child.ref.remove(); // حذف تلقائي للقصص المنتهية
-            }
-        });
-        
-        res.status(200).json({ stories: stories });
-    } catch (error) {
-        res.status(500).json({ error: 'فشل في جلب القصص' });
-    }
-});
-
-// 3. الإعجاب بالقصة (مع إرسال إشعار)
-app.post('/api/stories/:storyId/like', requireAuth, async (req, res) => {
-    try {
-        const storyId = req.params.storyId;
-        const userId = req.session.userId; 
-        
-        const storyRef = db.ref(`stories/${storyId}`);
-        const likeRef = db.ref(`stories/${storyId}/likes/${userId}`);
-        
-        const snapshot = await likeRef.once('value');
-        
-        if (snapshot.exists()) {
-            await likeRef.remove(); 
-            res.json({ liked: false });
-        } else {
-            await likeRef.set(true); 
-            
-            // إرسال إشعار لصاحب القصة إذا لم يكن هو نفسه المعجب
-            const storySnap = await storyRef.once('value');
-            const storyData = storySnap.val();
-            if (storyData && storyData.userId !== userId) {
-                const likerSnap = await db.ref(`profiles/${userId}`).once('value');
-                const likerProfile = likerSnap.val() || {};
-                
-                const notifRef = db.ref(`notifications/${storyData.userId}`).push();
-                await notifRef.set({
-                    id: notifRef.key,
-                    type: 'story_like', // نوع الإشعار مخصص للقصص
-                    from_user_id: userId,
-                    from_username: likerProfile.username || 'مستخدم',
-                    from_profile_picture_url: likerProfile.profile_picture_url || DEFAULT_PROFILE_PIC_URL,
-                    timestamp: admin.database.ServerValue.TIMESTAMP,
-                    is_read: false
-                });
-            }
-            
-            res.json({ liked: true });
-        }
-    } catch (error) {
-        console.error('Story like error:', error);
-        res.status(500).json({ error: 'حدث خطأ' });
-    }
-});
-
-// 4. حذف قصة
-app.delete('/api/stories/:storyId', requireAuth, async (req, res) => {
-    try {
-        const storyId = req.params.storyId;
-        const userId = req.session.userId;
-
-        const storyRef = db.ref(`stories/${storyId}`);
-        const snapshot = await storyRef.once('value');
-        const storyData = snapshot.val();
-
-        if (!storyData) return res.status(404).json({ error: 'القصة غير موجودة' });
-        
-        // التأكد من أن المستخدم الذي يحاول الحذف هو صاحب القصة
-        if (storyData.userId !== userId) return res.status(403).json({ error: 'غير مصرح لك بحذف هذه القصة' });
-
-        await storyRef.remove();
-        res.json({ success: true, message: 'تم الحذف بنجاح' });
-    } catch (error) {
-        console.error('Story delete error:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء الحذف' });
-    }
-});
-// ---------------- API: Chat & Messages ----------------
+// ---------------- API: Chat & Messages (kept) ----------------
 
 app.get('/api/chats', requireAuth, async (req, res) => {
   const userId = req.session.userId;
@@ -812,6 +942,7 @@ app.get('/api/messages/:contactId', requireAuth, async (req, res) => {
   }
 });
 
+// ارسال رسالة (keep)
 app.post('/api/messages/send', upload.array('media'), requireAuth, async (req, res) => {
   try {
     const senderId = req.session.userId;
@@ -921,7 +1052,6 @@ app.post('/api/messages/send', upload.array('media'), requireAuth, async (req, r
   }
 });
 
-    
 app.post('/api/mark_read', requireAuth, async (req, res) => {
   const userId = req.session.userId; // أنا (القارئ)
   const { other_id } = req.body;     // المرسل (الطرف الآخر)
@@ -964,10 +1094,7 @@ app.post('/api/mark_read', requireAuth, async (req, res) => {
   }
 });
 
-
-// ---------------- API: Message Reactions (جديد) ----------------
-
-// إضافة تفاعل (reaction) على رسالة معينة
+// ---------------- API: Message Reactions (existing) ----------------
 app.post('/api/messages/:otherId/reactions/:messageId', requireAuth, async (req, res) => {
   const userId = req.session.userId;
   const { otherId, messageId } = req.params;
@@ -990,8 +1117,6 @@ app.post('/api/messages/:otherId/reactions/:messageId', requireAuth, async (req,
 
     const message = messageSnap.val();
 
-
-
     // [مهم] حفظ التفاعل داخل كائن الرسالة مباشرة باستخدام update
     await messageRef.update({
       reaction: reaction
@@ -1004,8 +1129,6 @@ app.post('/api/messages/:otherId/reactions/:messageId', requireAuth, async (req,
   }
 });
 
-
-// حذف تفاعل (إذا أردت دعم إزالته لاحقًا)
 app.delete('/api/messages/:otherId/reactions/:messageId', requireAuth, async (req, res) => {
   const userId = req.session.userId;
   const { otherId, messageId } = req.params;
@@ -1021,9 +1144,6 @@ app.delete('/api/messages/:otherId/reactions/:messageId', requireAuth, async (re
 
     await reactionRef.remove();
 
-    // يمكنك تحديث حقل reaction إذا كنت تجمع التفاعلات
-    // هنا فقط نزيله من المستخدم
-
     res.json({ ok: true });
   } catch (error) {
     console.error('Remove message reaction error:', error);
@@ -1032,7 +1152,6 @@ app.delete('/api/messages/:otherId/reactions/:messageId', requireAuth, async (re
 });
 
 // ---------------- API: Users & Profile ----------------
-// /api/users -> returns friends only
 app.get('/api/users', requireAuth, async (req, res) => {
   const currentUserId = req.session.userId;
   try {
@@ -1104,7 +1223,6 @@ app.get('/api/get-public-info', async (req, res) => {
         res.json({ found: false });
     }
 });
-
 
 // /api/users/all -> all users with is_friend/request flags
 app.get('/api/users/all', requireAuth, async (req, res) => {
@@ -1211,6 +1329,7 @@ app.post('/api/friends/accept', requireAuth, async (req, res) => {
     res.status(500).json({ ok: false });
   }
 });
+
 // مسار حذف منشور (Post)
 app.delete('/api/posts/:id', async (req, res) => {
   try {
@@ -1528,7 +1647,7 @@ app.get('/api/posts', requireAuth, async (req, res) => {
   }
 });
 
-// ---------------- NEW: Get posts by user (required by profile page) ----------------
+// ---------------- Get posts by user (kept) ----------------
 app.get('/api/posts/user/:userId', requireAuth, async (req, res) => {
   const requestedUserId = req.params.userId;
   const currentUserId = req.session.userId;
@@ -1586,7 +1705,7 @@ app.get('/api/posts/user/:userId', requireAuth, async (req, res) => {
   }
 });
 
-// Like/unlike post
+// Like/unlike post (kept)
 app.post('/api/posts/:postId/like', requireAuth, async (req, res) => {
   const userId = req.session.userId;
   const postId = req.params.postId;
@@ -1736,8 +1855,7 @@ app.post('/api/posts/:postId/comment', requireAuth, async (req, res) => {
   }
 });
 
-// ---------------- New Feature: Like a comment ----------------
-// Toggle like/unlike on a comment, maintain likes count and notify owner
+// ---------------- New Feature: Like a comment (kept) ----------------
 app.post('/api/posts/:postId/comments/:commentId/like', requireAuth, async (req, res) => {
   const userId = req.session.userId;
   const { postId, commentId } = req.params;
@@ -1804,9 +1922,7 @@ app.post('/api/posts/:postId/comments/:commentId/like', requireAuth, async (req,
   }
 });
 
-// ---------------- New Feature: Reply to comment ----------------
-// Create a reply under comment_replies/{postId}/{commentId}
-// Increment repliesCount on comment and notify original commenter
+// ---------------- New Feature: Reply to comment (kept) ----------------
 app.post('/api/posts/:postId/comments/:commentId/reply', requireAuth, async (req, res) => {
   const userId = req.session.userId;
   const { postId, commentId } = req.params;
@@ -1878,7 +1994,7 @@ app.post('/api/posts/:postId/comments/:commentId/reply', requireAuth, async (req
   }
 });
 
-// ---------------- Get comments (UPDATED): include likes/replies summary and whether current user liked each ----------------
+// ---------------- Get comments (UPDATED with enrichments) ----------------
 app.get('/api/posts/:postId/comments', requireAuth, async (req, res) => {
   const currentUserId = req.session.userId;
   const { postId } = req.params;
@@ -1936,9 +2052,7 @@ app.get('/api/posts/:postId/comments', requireAuth, async (req, res) => {
           .limitToLast(5)
           .once('value');
         repliesSnap.forEach(r => recentReplies.push(r.val()));
-      } catch (e) {
-        recentReplies = [];
-      }
+      } catch (e) { recentReplies = []; }
 
       return {
         ...normalized,
@@ -2043,8 +2157,8 @@ app.get('/api/posts/:postId/comments/stream', requireAuth, async (req, res) => {
         addedQuery.off('child_added', onChildAdded);
         commentsRef.off('child_changed', onChildChanged);
         commentsRef.off('child_removed', onChildRemoved);
-        res.end();
-      } catch (e) { res.end(); }
+      } catch (e) { /* ignore */ }
+      res.end();
     });
 
   } catch (err) {
@@ -2273,7 +2387,7 @@ app.post('/api/reels/:reelId/comment', requireAuth, async (req, res) => {
   }
 });
 
-// New endpoints: like a reel comment
+// New endpoints: like a reel comment (kept)
 app.post('/api/reels/:reelId/comments/:commentId/like', requireAuth, async (req, res) => {
   const userId = req.session.userId;
   const { reelId, commentId } = req.params;
@@ -2340,7 +2454,7 @@ app.post('/api/reels/:reelId/comments/:commentId/like', requireAuth, async (req,
   }
 });
 
-// New endpoint: reply to a reel comment
+// New endpoint: reply to a reel comment (kept)
 app.post('/api/reels/:reelId/comments/:commentId/reply', requireAuth, async (req, res) => {
   const userId = req.session.userId;
   const { reelId, commentId } = req.params;
@@ -2412,7 +2526,7 @@ app.post('/api/reels/:reelId/comments/:commentId/reply', requireAuth, async (req
   }
 });
 
-// New endpoint: get replies for a reel comment
+// New endpoint: get replies for a reel comment (kept)
 app.get('/api/reels/:reelId/comments/:commentId/replies', requireAuth, async (req, res) => {
   const { reelId, commentId } = req.params;
   try {
@@ -2494,7 +2608,7 @@ app.get('/api/reels/:reelId/comments', requireAuth, async (req, res) => {
   }
 });
 
-// ---------------- API: Notifications ----------------
+// ---------------- API: Notifications (kept) ----------------
 
 app.get('/api/notifications', requireAuth, async (req, res) => {
   const userId = req.session.userId;
@@ -2696,14 +2810,11 @@ setInterval(async () => {
   }
 }, 60000); // Check every minute
 
-
 // ---------------- Error Handling ----------------
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) return res.status(413).json({ ok: false, error: err.message });
   next(err);
 });
-
-
 
 // 2. API لتغيير كلمة المرور
 app.post('/api/change-password', requireAuth, async (req, res) => {
@@ -2804,10 +2915,9 @@ app.post('/api/account/delete', requireAuth, async (req, res) => {
   }
 });
 
-
 // ---------------- HTMX partials (used by client-side navigation) ----------------
 // These endpoints return HTML fragments (partials) consumed by HTMX on the client.
-// They are lightweight representations of families and posts used for fast in-page navigation.
+// They are lightweight representations of stories/posts used for fast in-page navigation.
 
 // helper server-side escaper
 function escapeHtml(s) {
@@ -2862,19 +2972,16 @@ app.get('/partials/posts', requireAuth, async (req, res) => {
 });
 
 /**
- * Partial: combined chat content (posts)
+ * Partial: combined chat content (posts only, families removed)
  */
 app.get('/partials/chat_content', requireAuth, async (req, res) => {
   try {
-    const postsPromise = db.ref('posts').orderByChild('timestamp').limitToLast(50).once('value');
-    const profilesPromise = db.ref('profiles').once('value');
-
-    const [postsSnap, profilesSnap] = await Promise.all([postsPromise, profilesPromise]);
-
+    const postsSnap = await db.ref('posts').orderByChild('timestamp').limitToLast(50).once('value');
     const postsArr = [];
     postsSnap.forEach(child => postsArr.push(child.val()));
     postsArr.reverse();
 
+    const profilesSnap = await db.ref('profiles').once('value');
     const profiles = profilesSnap.val() || {};
 
     let html = '';
@@ -2896,20 +3003,18 @@ app.get('/partials/chat_content', requireAuth, async (req, res) => {
   }
 });
 
+// ---------------- API: Reels Implementation continued (already added above) ----------------
+
+// ---------------- Error handling & final listen ----------------
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ ok: false, error: 'Server error' });
 });
 
 // ============================================================
-// مسار جديد: جلب رسائل المحادثة (JSON) - يحل مشكلة التاريخ والصوت
+// Additional legacy message JSON endpoint (kept for compatibility)
 // ============================================================
-app.get('/api/messages/:chatId', async (req, res) => {
-  // التحقق من تسجيل الدخول
-  if (!req.session.userId) {
-    return res.status(401).json({ error: 'غير مصرح' });
-  }
-
+app.get('/api/messages/:chatId', requireAuth, async (req, res) => {
   const chatId = req.params.chatId;
   const currentUserId = req.session.userId;
 
@@ -2918,8 +3023,6 @@ app.get('/api/messages/:chatId', async (req, res) => {
     const messagesRef = admin.database().ref(`chats/${chatId}/messages`);
 
     // 2. جلب الرسائل (التعديل الأساسي هنا)
-    // نستخدم limitToLast(1000) لجلب أرشيف كبير من الرسائل (القديم والجديد)
-    // يمكنك زيادة الرقم أو إزالته تماماً لجلب كل شيء، لكن 1000 رقم آمن للأداء
     const snapshot = await messagesRef
       .orderByChild('timestamp')
       .limitToLast(1000) 
@@ -2927,7 +3030,6 @@ app.get('/api/messages/:chatId', async (req, res) => {
 
     const messages = [];
     snapshot.forEach(child => {
-      // تجميع الرسائل في مصفوفة
       messages.push({
         ...child.val(),
         messageId: child.key
@@ -2936,7 +3038,6 @@ app.get('/api/messages/:chatId', async (req, res) => {
 
     // 3. جلب بيانات المستخدم الآخر (لعرض الاسم والصورة في الأعلى)
     const parts = chatId.split('_');
-    // تحديد من هو الطرف الآخر بناءً على الـ ID
     const otherUserId = parts[0] === currentUserId ? parts[1] : parts[0];
     
     const userSnapshot = await admin.database().ref('users/' + otherUserId).once('value');
@@ -2948,7 +3049,7 @@ app.get('/api/messages/:chatId', async (req, res) => {
       currentUserId: currentUserId,
       otherUser: {
         username: otherUserData.username || 'مستخدم',
-        avatar: otherUserData.profilePic || DEFAULT_PROFILE_PIC_URL // تأكد أن هذا المتغير معرف لديك في أعلى الملف
+        avatar: otherUserData.profilePic || DEFAULT_PROFILE_PIC_URL
       }
     });
 
@@ -2959,7 +3060,7 @@ app.get('/api/messages/:chatId', async (req, res) => {
 });
 
 // ==========================================
-//  نظام بث قائمة المحادثات (SSE) - الإصلاح
+//  نظام بث قائمة المحادثات (SSE) - kept
 // ==========================================
 app.get('/api/users/stream', requireAuth, async (req, res) => {
   const currentUserId = req.session.userId;
